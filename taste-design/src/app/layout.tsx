@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import ShaderBackground from "@/components/ShaderBackground";
 import SiteNav from "@/components/SiteNav";
+import PageSwipe from "@/components/PageSwipe";
 
 export const metadata: Metadata = {
   title: "Taste Design 设计厨房",
@@ -26,8 +27,12 @@ export default function RootLayout({
         <div className="shader-scrim" aria-hidden="true" />
         <div className="grain" aria-hidden="true" />
 
-        <SiteNav />
-        <main>{children}</main>
+        {/* PageSwipe 提供「渐隐渐现 + 左右滑动」的换页过渡；
+            data-page-stage 标记被动画的舞台，固定导航留在舞台外不被一起推走 */}
+        <PageSwipe>
+          <SiteNav />
+          <main data-page-stage className="relative overflow-x-clip">{children}</main>
+        </PageSwipe>
       </body>
     </html>
   );

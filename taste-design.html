@@ -112,7 +112,8 @@ body{
 .menu .cn{margin-top:.35rem;font-size:.95rem}
 
 /* ── 版心 ── */
-main{position:relative;z-index:1}
+/* 换页滑动时旧页会被推出视口边界，clip 掉这点溢出，避免横向出现可滚 range */
+main{position:relative;z-index:1;overflow-x:clip}
 .wrap{max-width:var(--maxw);margin:0 auto;width:100%}
 /* 每一屏都是一个吸附点；scroll-snap-stop 保证快速滑动也不会跳屏 */
 .screen{position:relative;padding-inline:var(--pad);
@@ -957,18 +958,70 @@ void main(){
     hits.forEach((h,i)=>h.setAttribute('aria-pressed',String(i===active)));
   }
 
-  function go(route){
-    const r = (route==='works')?'works':'studio';
-    pages.studio.hidden = r!=='studio';
-    pages.works.hidden  = r!=='works';
+  /* ── 页面切换：渐隐渐现 + 左右滑动 ───────────────────────────────
+     顺序式：旧页滑走淡出 →（两页都不可见的那一瞬）归零滚动 + 换页 → 新页滑入淡入。
+     为什么不做交叉淡化：两页同时留在文档流里会把 <main> 撑成双份高度，
+     而且中途归零滚动会让「还在淡出的旧页」突然跳回首屏。
+     方向按导航顺序：我们 → 作品，新页从右边进；作品 → 我们，从左边进。 */
+  const ORDER={studio:0,works:1};
+  const reduceMQ=matchMedia('(prefers-reduced-motion: reduce)');
+  let curRoute=null, switching=false, queued=null;
+
+  function markLinks(r){
     links.forEach(a=>{
       if(!a.dataset.route) return;
-      const isActive = a.dataset.route===r;
-      if(isActive) a.setAttribute('aria-current','page');
+      if(a.dataset.route===r) a.setAttribute('aria-current','page');
       else a.removeAttribute('aria-current');
     });
-    scrollTo({top:0,behavior:'auto'});
-    syncNav();
+  }
+  /* 动画收尾：cancel 掉 fill 效果并清掉内联样式，让元素回到「无动画」状态 */
+  function resetPage(el){
+    if(el.getAnimations) el.getAnimations().forEach(a=>a.cancel());
+    el.style.opacity='';el.style.transform='';
+  }
+  function slideDist(){ return Math.max(24,Math.min(90,innerWidth*0.055)); }
+
+  function go(route,animate){
+    const r=(route==='works')?'works':'studio';
+    if(r===curRoute){ markLinks(r); return; }
+    if(switching){ queued=r; return; }   // 上一次过渡还没走完，排队补一次
+    const prev=curRoute;
+    curRoute=r;
+    markLinks(r);                        // 导航高亮立刻响应点击，不等动画
+    const incoming=pages[r], outgoing=pages[prev];
+
+    /* 换页发生在两页都不可见的那一瞬，所以归零滚动不会被看见 */
+    const land=()=>{
+      if(outgoing){ outgoing.hidden=true; resetPage(outgoing); }
+      if(cards.length) setActive(null);  // 牌堆回到「没选任何一张」的静止形态
+      incoming.hidden=false;
+      scrollTo({top:0,behavior:'auto'});
+      syncNav();
+    };
+
+    if(!animate || !outgoing || !incoming.animate || reduceMQ.matches){
+      land(); resetPage(incoming); return;
+    }
+
+    switching=true;
+    const dir=ORDER[r]>ORDER[prev]?1:-1, d=slideDist()*dir;
+    const outA=outgoing.animate(
+      [{opacity:1,transform:'translate3d(0,0,0)'},
+       {opacity:0,transform:`translate3d(${-d}px,0,0)`}],
+      {duration:220,easing:'cubic-bezier(.4,0,1,1)',fill:'forwards'});
+    const then=()=>{
+      land();
+      const inA=incoming.animate(
+        [{opacity:0,transform:`translate3d(${d}px,0,0)`},
+         {opacity:1,transform:'translate3d(0,0,0)'}],
+        {duration:360,easing:'cubic-bezier(.22,.61,.36,1)',fill:'both'});
+      const fin=()=>{
+        switching=false; resetPage(incoming);
+        if(queued){ const q=queued; queued=null; go(q,true); }
+      };
+      inA.finished.then(fin,fin);
+    };
+    outA.finished.then(then,then);
   }
 
   /* 品牌文字：首页第一屏只留图形 logo；滚过半屏进入第二屏后从下往上浮现。
@@ -1001,9 +1054,10 @@ void main(){
   links.forEach(a=>a.addEventListener('click',e=>{
     if(a.dataset.route){ e.preventDefault(); location.hash='#/'+a.dataset.route; }
   }));
-  addEventListener('hashchange',()=>go((location.hash||'').replace('#/','')||'studio'));
+  addEventListener('hashchange',()=>go((location.hash||'').replace('#/','')||'studio',true));
 
-  go((location.hash||'').replace('#/','')||'studio');
+  /* 首帧直接落位不做动画：这里再滑一次会和进场动画打架 */
+  go((location.hash||'').replace('#/','')||'studio',false);
 })();
 
 /* ═══════════════════════════════════════════

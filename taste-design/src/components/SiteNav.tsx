@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { SwipeLink } from "@/components/PageSwipe";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { NAV, STUDIO, BASE } from "@/lib/site";
@@ -58,7 +58,7 @@ export default function SiteNav() {
     >
       {/* 左右不留边：品牌与菜单顶到视口两侧 */}
       <div className="mx-auto flex max-w-[1680px] items-center justify-between px-0 py-4 sm:px-0 sm:py-6">
-        <Link
+        <SwipeLink
           href="/"
           className="group flex items-center gap-[0.65rem] no-underline"
           aria-label={`${STUDIO.name} ${STUDIO.nameCn} — 首页`}
@@ -80,7 +80,7 @@ export default function SiteNav() {
               {STUDIO.nameCn}
             </span>
           </span>
-        </Link>
+        </SwipeLink>
 
         <nav aria-label="主导航">
           <ul className="flex items-center gap-1 sm:gap-3">
@@ -92,7 +92,7 @@ export default function SiteNav() {
 
               return (
                 <li key={item.href}>
-                  <Link
+                  <SwipeLink
                     href={item.href}
                     aria-current={active ? "page" : undefined}
                     className={[
@@ -108,7 +108,7 @@ export default function SiteNav() {
                         {item.label}
                       </span>
                     </span>
-                  </Link>
+                  </SwipeLink>
                 </li>
               );
             })}
