@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useState, type CSSProperties } from "react";
 import { WORK_DECKS } from "@/lib/site";
 import { BASE } from "@/lib/site";
+import { SwipeLink } from "@/components/PageSwipe";
 import { cn } from "@/lib/utils";
 
 /**
@@ -98,15 +99,15 @@ export function WorksBrowser() {
                 </div>
               </div>
 
-              {/* 命中层：让整张卡可聚焦 / 可点（正文用标题才是正解，不能把 h2 塞进 button） */}
-              <button
-                type="button"
+              {/* 命中层：铺满整卡，键盘可聚焦、鼠标可悬停、点击进二级页。
+                  用链接而不是 button —— 牌堆就是七个一级分类的入口，
+                  按钮语义会丢掉「可跳转」这件事。 */}
+              <SwipeLink
+                href={`/works/${d.kind}`}
                 className="deck-hit"
-                aria-pressed={on}
-                aria-label={`${d.cn} ${d.en}`}
+                aria-label={`${d.cn} ${d.en} — 查看作品`}
                 onFocus={() => setActive(i)}
                 onBlur={() => setActive((cur) => (cur === i ? null : cur))}
-                onClick={() => setActive(on ? null : i)}
               />
             </article>
           </li>

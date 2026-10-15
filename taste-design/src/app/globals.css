@@ -1121,3 +1121,343 @@
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.22);
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   作品二级页（/works/<一级>）
+   左：一级（英文大字 + 中文小字）+ 二级（内联手风琴，缩进 21px）
+   中：三级（当前二级下的作品）
+   右：图片流（全部作品首尾相接，滚到底自然接下一个）
+
+   三栏各自垂直居中 —— 用 margin-block:auto 而不是 justify-content:center，
+   否则内容比容器高时会被裁掉顶部（flex 居中的经典坑）。
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* 固定导航的实际高度：py-4(16×2) + logo 48 = 80，≥640px 的 sm:py-6 是 96。
+     二级页是 100svh 满屏布局，必须让出这一截，否则三栏顶到导航底下 */
+  --navh: 5rem;
+}
+@media (min-width: 640px) {
+  :root {
+    --navh: 6rem;
+  }
+}
+
+.wdetail {
+  display: flex;
+  align-items: stretch;
+  height: 100svh;
+  padding-top: var(--navh);
+  overflow: hidden;
+}
+
+/* ⚠ scroll-behavior:auto 是必须的，不是可选优化：html 上那条
+   scroll-behavior:smooth 会被**继承**下来，于是所有 `el.scrollTop = x` /
+   `el.scrollLeft += x` 都变成异步平滑滚动 —— 代码读完立刻读回旧值，
+   菜单带不进视野、进页会从 0 一路「滑」到目标（几千像素的模糊）。
+   需要动画的地方一律用 scrollTo({behavior:'smooth'}) 显式声明。 */
+.wdetail,
+.wd-nav,
+.wd-list,
+.wd-feed,
+.wd-l1,
+.wd-l2,
+.wd-l3 {
+  scroll-behavior: auto;
+}
+
+/* ── 左：一级 + 二级 ── */
+.wd-nav {
+  flex: none;
+  width: clamp(230px, 28.7vw, 410px);
+  margin-left: var(--pad);
+  padding-block: 2.25rem;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  display: flex;
+  flex-direction: column;
+}
+.wd-nav::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+.wd-nav-in {
+  margin-block: auto;
+}
+
+.wd-l1,
+.wd-l2,
+.wd-l3 {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.wd-l1b {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.3rem 0;
+  background: none;
+  border: 0;
+  text-align: left;
+  color: var(--color-mute);
+  cursor: pointer;
+  transition: color 0.25s ease;
+}
+.wd-l1b:hover {
+  color: var(--color-ink);
+}
+.wd-en {
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 1.7vw, 1.7rem);
+  font-weight: 500;
+  font-stretch: 96%;
+  line-height: 1.18;
+  letter-spacing: 0.005em;
+  white-space: nowrap;
+}
+.wd-cn {
+  font-size: clamp(0.72rem, 0.92vw, 0.84rem);
+  white-space: nowrap;
+  transition: color 0.25s ease;
+}
+.wd-l1li.is-on .wd-l1b {
+  color: var(--color-ink);
+}
+.wd-l1li.is-on .wd-en {
+  font-weight: 650;
+}
+.wd-l1li.is-on .wd-cn {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* 二级：内联手风琴。缩进 21px 对齐参考图（一级 81px → 二级 102px @1920） */
+.wd-l2 {
+  padding-left: 21px;
+  margin-top: 0.15rem;
+}
+.wd-l2b {
+  display: block;
+  width: 100%;
+  padding: 0.28rem 0;
+  background: none;
+  border: 0;
+  text-align: left;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  color: var(--color-mute);
+  cursor: pointer;
+  transition: color 0.25s ease;
+}
+.wd-l2b:hover {
+  color: var(--color-ink);
+}
+.wd-l2b.is-on {
+  color: var(--color-ink);
+  font-weight: 620;
+}
+
+/* ── 中：三级 ── */
+.wd-list {
+  flex: none;
+  width: clamp(176px, 15.6vw, 252px);
+  margin-left: clamp(28px, 13.6vw, 220px);
+  padding-block: 2.25rem;
+  overflow-y: auto;
+  scrollbar-width: none;
+  display: flex;
+  flex-direction: column;
+}
+.wd-list::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+.wd-l3 {
+  margin-block: auto;
+}
+.wd-l3b {
+  display: block;
+  width: 100%;
+  padding: 0.42rem 0;
+  background: none;
+  border: 0;
+  text-align: left;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--color-mute);
+  cursor: pointer;
+  transition: color 0.25s ease;
+}
+.wd-l3b:hover {
+  color: var(--color-ink);
+}
+.wd-l3b.is-on {
+  color: var(--color-ink);
+  font-weight: 620;
+}
+
+/* ── 右：图片流 ── */
+.wd-feed {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  /* 滚到底不把惯性甩给页面（页面本身不该滚） */
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.wd-feed::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+.wd-feed-in {
+  max-width: 1320px;
+  padding: 1.25rem 0 6rem;
+}
+.wd-cap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.8rem;
+  margin: 0;
+  padding: 2.4rem 0 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+.wd-work:first-child .wd-cap {
+  padding-top: 0.35rem;
+  border-top: 0;
+}
+.wd-cap-t {
+  font-size: 0.86rem;
+  font-weight: 560;
+  color: var(--color-ink);
+}
+.wd-cap-p {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  color: var(--color-mute);
+}
+.wd-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 14px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.wd-img:first-of-type {
+  margin-top: 0;
+}
+
+@media (max-width: 1023.98px) {
+  /* ── 窄屏：三栏改成三行横向 chips（可侧滑），图片流吃掉剩下的高度 ── */
+  .wdetail {
+    flex-direction: column;
+  }
+  .wd-nav {
+    width: auto;
+    margin-left: 0;
+    padding: 0.4rem var(--pad) 0;
+    overflow: visible;
+    flex: none;
+  }
+  .wd-nav-in {
+    margin: 0;
+  }
+  .wd-l1 {
+    display: flex;
+    align-items: baseline;
+    gap: 1.05rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 0.3rem;
+  }
+  .wd-l1::-webkit-scrollbar {
+    display: none;
+  }
+  .wd-l1li {
+    flex: none;
+  }
+  .wd-l1b {
+    width: auto;
+    gap: 0.4rem;
+    padding: 0.1rem 0;
+    white-space: nowrap;
+  }
+  .wd-en {
+    font-size: 1.05rem;
+  }
+  .wd-cn {
+    font-size: 0.7rem;
+  }
+  .wd-l2row {
+    display: flex;
+    gap: 0.95rem;
+    padding-left: 0;
+    margin-top: 0.3rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .wd-l2row::-webkit-scrollbar {
+    display: none;
+  }
+  .wd-l2row > li {
+    flex: none;
+  }
+  .wd-l2b {
+    width: auto;
+    padding: 0.1rem 0;
+    white-space: nowrap;
+  }
+  .wd-list {
+    width: auto;
+    margin-left: 0;
+    padding: 0.35rem var(--pad) 0;
+    overflow: visible;
+    flex: none;
+    display: block;
+  }
+  .wd-l3 {
+    display: flex;
+    gap: 0.95rem;
+    margin: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 0.45rem;
+  }
+  .wd-l3::-webkit-scrollbar {
+    display: none;
+  }
+  .wd-l3 > li {
+    flex: none;
+  }
+  .wd-l3b {
+    width: auto;
+    padding: 0.1rem 0;
+    white-space: nowrap;
+    border-bottom: 1px solid transparent;
+    padding-bottom: 0.2rem;
+  }
+  .wd-l3b.is-on {
+    border-bottom-color: rgba(255, 255, 255, 0.5);
+  }
+  .wd-feed {
+    padding: 0 var(--pad);
+  }
+  .wd-feed-in {
+    max-width: none;
+    padding: 0.9rem 0 4rem;
+  }
+  .wd-cap {
+    padding: 2rem 0 0.85rem;
+  }
+  .wd-img {
+    margin-top: 10px;
+  }
+}
+

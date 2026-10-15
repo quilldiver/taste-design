@@ -538,6 +538,121 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
   *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
   .fan{transform:rotateY(-24deg)}
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   作品二级页（#/works/<一级>）
+   左：一级（英文大字 + 中文小字）+ 二级（内联手风琴，缩进 21px）
+   中：三级（当前二级下的作品）
+   右：图片流（全部作品首尾相接，滚到底自然接下一个）
+   三栏各自垂直居中 —— 用 margin-block:auto 而不是 justify-content:center，
+   否则内容比容器高时会被裁掉顶部（flex 居中的经典坑）。
+   ═══════════════════════════════════════════════════════════════════ */
+:root{
+  /* 固定导航的实际高度：.nav-in 上下各 16 + logo 48 = 80。
+     二级页是 100svh 满屏布局，必须让出这一截，否则三栏顶到导航底下 */
+  --navh:80px;
+}
+.wdetail{display:flex;align-items:stretch;height:100svh;
+  padding-top:var(--navh);overflow:hidden}
+/* ⚠ scroll-behavior:auto 是必须的，不是可选优化：html 上那条
+   scroll-behavior:smooth 会被**继承**下来，于是所有 `el.scrollTop = x` /
+   `el.scrollLeft += x` 都变成异步平滑滚动 —— 代码读完立刻读回旧值，
+   菜单带不进视野、进页会从 0 一路「滑」到目标（几千像素的模糊）。
+   需要动画的地方一律用 scrollTo({behavior:'smooth'}) 显式声明。 */
+.wdetail,.wd-nav,.wd-list,.wd-feed,.wd-l1,.wd-l2,.wd-l3{scroll-behavior:auto}
+
+/* ── 左：一级 + 二级 ── */
+.wd-nav{flex:none;width:clamp(230px,28.7vw,410px);margin-left:var(--pad);
+  padding-block:2.25rem;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;
+  display:flex;flex-direction:column}
+.wd-nav::-webkit-scrollbar{width:0;height:0}
+.wd-nav-in{margin-block:auto}
+.wd-l1,.wd-l2,.wd-l3{list-style:none;margin:0;padding:0}
+.wd-l1b{display:flex;align-items:baseline;gap:.5rem;width:100%;padding:.3rem 0;
+  background:none;border:0;text-align:left;color:var(--mute);cursor:pointer;
+  font:inherit;transition:color .25s ease}
+.wd-l1b:hover{color:var(--ink)}
+.wd-en{font-family:var(--f-display);font-size:clamp(1.15rem,1.7vw,1.7rem);
+  font-weight:500;font-stretch:96%;line-height:1.18;letter-spacing:.005em;white-space:nowrap}
+.wd-cn{font-size:clamp(.72rem,.92vw,.84rem);white-space:nowrap;transition:color .25s ease}
+.wd-l1li.is-on .wd-l1b{color:var(--ink)}
+.wd-l1li.is-on .wd-en{font-weight:650}
+.wd-l1li.is-on .wd-cn{color:rgba(255,255,255,.7)}
+/* 二级：内联手风琴。缩进 21px 对齐参考图（一级 81px → 二级 102px @1920）。
+   默认全收起，靠 .is-open 展开当前一级那一份（只在桌面用；窄屏整条隐藏，
+   改用下面那行横向 chips）。 */
+.wd-l2{display:none;padding-left:21px;margin-top:.15rem}
+@media (min-width:1024px){
+  .wd-l1li.is-open > .wd-l2{display:block}
+}
+.wd-l2b{display:block;width:100%;padding:.28rem 0;background:none;border:0;
+  text-align:left;font:inherit;font-size:.84rem;line-height:1.4;color:var(--mute);
+  cursor:pointer;transition:color .25s ease}
+.wd-l2b:hover{color:var(--ink)}
+.wd-l2b.is-on{color:var(--ink);font-weight:620}
+
+/* ── 中：三级 ── */
+.wd-list{flex:none;width:clamp(176px,15.6vw,252px);margin-left:clamp(28px,13.6vw,220px);
+  padding-block:2.25rem;overflow-y:auto;scrollbar-width:none;
+  display:flex;flex-direction:column}
+.wd-list::-webkit-scrollbar{width:0;height:0}
+/* 「没有三级就不展示」——⚠ 必须用 class，不能用 hidden 属性：
+   .wd-list 自己有 author 的 display:flex，而 [hidden]{display:none} 在 UA 表里，
+   作者声明永远压过 UA 声明，所以给元素加 hidden 属性是**不生效**的，
+   整列会留一条空白占位把图片流顶偏。.wd-list.is-empty 权重更高，两边都赢。 */
+.wd-list.is-empty{display:none}
+.wd-l3{margin-block:auto}
+.wd-l3b{display:block;width:100%;padding:.42rem 0;background:none;border:0;text-align:left;
+  font:inherit;font-size:.84rem;line-height:1.45;color:var(--mute);cursor:pointer;
+  transition:color .25s ease}
+.wd-l3b:hover{color:var(--ink)}
+.wd-l3b.is-on{color:var(--ink);font-weight:620}
+
+/* ── 右：图片流 ── */
+.wd-feed{position:relative;flex:1 1 auto;min-width:0;min-height:0;overflow-y:auto;
+  overscroll-behavior:contain;scrollbar-width:none;-ms-overflow-style:none}
+.wd-feed::-webkit-scrollbar{width:0;height:0}
+.wd-feed-in{max-width:1320px;padding:1.25rem 0 6rem}
+.wd-cap{display:flex;flex-wrap:wrap;align-items:baseline;gap:.8rem;margin:0;
+  padding:2.4rem 0 1rem;border-top:1px solid rgba(255,255,255,.1)}
+.wd-work:first-child .wd-cap{padding-top:.35rem;border-top:0}
+.wd-cap-t{font-size:.86rem;font-weight:560;color:var(--ink)}
+.wd-cap-p{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.16em;color:var(--mute)}
+.wd-img{display:block;width:100%;height:auto;margin-top:14px;border-radius:2px;
+  background:rgba(255,255,255,.03)}
+.wd-img:first-of-type{margin-top:0}
+
+@media (max-width:1023.98px){
+  /* ── 窄屏：三栏改成三行横向 chips（可侧滑），图片流吃掉剩下的高度 ── */
+  .wdetail{flex-direction:column}
+  .wd-nav{width:auto;margin-left:0;padding:.4rem var(--pad) 0;overflow:visible;flex:none}
+  .wd-nav-in{margin:0}
+  .wd-l1{display:flex;align-items:baseline;gap:1.05rem;overflow-x:auto;
+    scrollbar-width:none;padding-bottom:.3rem}
+  .wd-l1::-webkit-scrollbar{display:none}
+  .wd-l1li{flex:none}
+  .wd-l1b{width:auto;gap:.4rem;padding:.1rem 0;white-space:nowrap}
+  .wd-en{font-size:1.05rem}
+  .wd-cn{font-size:.7rem}
+  .wd-l2row{display:flex;gap:.95rem;padding-left:0;margin-top:.3rem;overflow-x:auto;
+    scrollbar-width:none}
+  .wd-l2row::-webkit-scrollbar{display:none}
+  .wd-l2row > li{flex:none}
+  .wd-l2row .wd-l2b{width:auto;padding:.1rem 0;white-space:nowrap}
+  .wd-list{width:auto;margin-left:0;padding:.35rem var(--pad) 0;overflow:visible;
+    flex:none;display:block}
+  .wd-l3{display:flex;gap:.95rem;margin:0;overflow-x:auto;scrollbar-width:none;
+    padding-bottom:.45rem}
+  .wd-l3::-webkit-scrollbar{display:none}
+  .wd-l3 > li{flex:none}
+  .wd-l3b{width:auto;padding:.1rem 0 .2rem;white-space:nowrap;
+    border-bottom:1px solid transparent}
+  .wd-l3b.is-on{border-bottom-color:rgba(255,255,255,.5)}
+  .wd-feed{padding:0 var(--pad)}
+  .wd-feed-in{max-width:none;padding:.9rem 0 4rem}
+  .wd-cap{padding:2rem 0 .85rem}
+  .wd-img{margin-top:10px}
+}
 </style>
 </head>
 <body>
@@ -643,6 +758,27 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
         </h1>
         <!-- 牌堆由 JS 生成（见脚本第 3 块） -->
         <ul class="deck" id="deck"></ul>
+      </div>
+    </section>
+  </div>
+
+  <!-- ════════ 作品 · 二级页（左 一级+二级 / 中 三级 / 右 图片流）════════ -->
+  <div id="page-detail" hidden>
+    <section class="wdetail">
+      <div class="wd-nav">
+        <div class="wd-nav-in">
+          <!-- 一级（内联二级由 JS 插在展开的那一项后面） -->
+          <ol class="wd-l1" id="wdL1"></ol>
+          <!-- 窄屏用的二级横向行。桌面态由 .wd-l2{display:none} 收掉，
+               不写 hidden 属性 —— 那个属性在这套样式里压不住 .wd-l2row{display:flex} -->
+          <ol class="wd-l2 wd-l2row" id="wdL2Row"></ol>
+        </div>
+      </div>
+      <nav class="wd-list" id="wdList" aria-label="作品">
+        <ol class="wd-l3" id="wdL3"></ol>
+      </nav>
+      <div class="wd-feed" id="wdFeed" role="region" aria-label="作品图片" tabindex="0">
+        <div class="wd-feed-in" id="wdFeedIn"></div>
       </div>
     </section>
   </div>
@@ -993,7 +1129,9 @@ void main(){
   /* 推开步长递减：离主角越近让位越多，远处增速放缓，避免把整排推出版心 */
   const STEP=[0,1,2.2,3.1];
 
-  const pages={studio:document.getElementById('page-studio'),works:document.getElementById('page-works')};
+  const pages={studio:document.getElementById('page-studio'),
+               works:document.getElementById('page-works'),
+               detail:document.getElementById('page-detail')};
   const links=[...document.querySelectorAll('[data-route]')];
   const deck=document.getElementById('deck');
   let active=null;
@@ -1013,7 +1151,7 @@ void main(){
               <p class="deck-note">${d.note}</p>
             </div>
           </div>
-          <button type="button" class="deck-hit" aria-pressed="false" aria-label="${d.cn} ${d.en}"></button>
+          <a class="deck-hit" href="#/works/${d.kind}" aria-label="${d.cn} ${d.en} — 查看作品"></a>
         </article>
       </li>`).join('');
     cells=[...deck.querySelectorAll('.deck-cell')];
@@ -1022,11 +1160,11 @@ void main(){
 
     cards.forEach((c,i)=>c.addEventListener('mouseenter',()=>setActive(i)));
     deck.addEventListener('mouseleave',()=>setActive(null));
+    /* 牌堆每张卡都是「一级分类」的入口，命中层是 <a>：只负责聚焦反馈，
+       跳转交给浏览器改 hash（不带 data-route，路由模块不会拦它）。 */
     hits.forEach((h,i)=>{
       h.addEventListener('focus',()=>setActive(i));
       h.addEventListener('blur', ()=>{ if(active===i) setActive(null); });
-      /* 触屏：点一下等同悬停，再点取消（不需要精确控制指针） */
-      h.addEventListener('click',()=>setActive(active===i?null:i));
     });
     applyDeck();
   }
@@ -1047,22 +1185,31 @@ void main(){
       c.style.setProperty('--shift',shiftOf(i));
     });
     cells.forEach((cell,i)=>{ cell.style.zIndex=(i===active?30:10+i); });
-    hits.forEach((h,i)=>h.setAttribute('aria-pressed',String(i===active)));
   }
 
   /* ── 页面切换：渐隐渐现 + 左右滑动 ───────────────────────────────
      顺序式：旧页滑走淡出 →（两页都不可见的那一瞬）归零滚动 + 换页 → 新页滑入淡入。
      为什么不做交叉淡化：两页同时留在文档流里会把 <main> 撑成双份高度，
      而且中途归零滚动会让「还在淡出的旧页」突然跳回首屏。
-     方向按导航顺序：我们 → 作品，新页从右边进；作品 → 我们，从左边进。 */
-  const ORDER={studio:0,works:1};
+     方向按导航顺序：我们 → 作品 → 作品二级页，新页从右边进；返回则从左边进。
+     ⚠ 作品二级页（#/works/<一级>）跟作品页共用 ORDER=1，避免同级之间来回横滑。 */
+  const ORDER={studio:0,works:1,detail:1};
   const reduceMQ=matchMedia('(prefers-reduced-motion: reduce)');
-  let curRoute=null, switching=false, queued=null;
+  let curPage=null, curSlug=null, switching=false, queued=null;
 
-  function markLinks(r){
+  /* 解析 hash：#/studio、#/works、#/works/<一级> */
+  function parseHash(){
+    const raw=(location.hash||'').replace(/^#\/?/,'');
+    const seg=raw.split('/').filter(Boolean);
+    if(seg[0]==='works') return seg[1]?{page:'detail',slug:seg[1]}:{page:'works',slug:null};
+    return {page:'studio',slug:null};
+  }
+
+  function markLinks(p){
+    const want = (p==='studio') ? 'studio' : 'works';
     links.forEach(a=>{
       if(!a.dataset.route) return;
-      if(a.dataset.route===r) a.setAttribute('aria-current','page');
+      if(a.dataset.route===want) a.setAttribute('aria-current','page');
       else a.removeAttribute('aria-current');
     });
   }
@@ -1073,19 +1220,19 @@ void main(){
   }
   function slideDist(){ return Math.max(24,Math.min(90,innerWidth*0.055)); }
 
-  function go(route,animate){
-    const r=(route==='works')?'works':'studio';
-    if(r===curRoute){ markLinks(r); return; }
-    if(switching){ queued=r; return; }   // 上一次过渡还没走完，排队补一次
-    const prev=curRoute;
-    curRoute=r;
-    markLinks(r);                        // 导航高亮立刻响应点击，不等动画
-    const incoming=pages[r], outgoing=pages[prev];
+  function go(target,animate){
+    const page=target.page, slug=target.slug||null;
+    if(page===curPage && slug===curSlug){ markLinks(page); return; }
+    if(switching){ queued=target; return; }   // 上一次过渡还没走完，排队补一次
+    const prev=curPage;
+    curPage=page; curSlug=slug;
+    markLinks(page);                     // 导航高亮立刻响应点击，不等动画
+    const incoming=pages[page], outgoing=pages[prev];
 
     /* 换页发生在两页都不可见的那一瞬，所以归零滚动不会被看见 */
     const land=()=>{
       /* 除目标页以外一律隐藏。不能只隐藏 outgoing —— 首帧直接落在 #/works 时
-         prev 还是 null（另一页从没被隐藏过），两页会同时留在文档流里：
+         prev 还是 null（另两页从没被隐藏过），会同时留在文档流里：
          页高翻倍、吸附点串页、滚动位置全乱。 */
       for(const k in pages){
         if(pages[k]===incoming) continue;
@@ -1094,9 +1241,11 @@ void main(){
       if(cards.length) setActive(null);  // 牌堆回到「没选任何一张」的静止形态
       incoming.hidden=false;
       scrollTo({top:0,behavior:'auto'});
-      /* 「我们」是三屏长页面，滚动条会常驻；作品页只有一屏，本来就没有，
-         所以按需挂在 html 上，别全局一刀切 */
-      document.documentElement.classList.toggle('no-bars', r==='studio');
+      /* 「我们」是三屏长页面、二级页是 100svh 满屏，两者的滚动条都是噪音；
+         只有作品页（窄屏会长过一屏）需要常显，按需挂到 html 上 */
+      document.documentElement.classList.toggle('no-bars', page!=='works');
+      /* 二级页：落到目标一级的第一个作品（同步量偏移，不能等下一帧，否则会先闪一下首图） */
+      if(page==='detail' && window.__WD) window.__WD.enter(slug);
       syncNav();
     };
 
@@ -1105,7 +1254,7 @@ void main(){
     }
 
     switching=true;
-    const dir=ORDER[r]>ORDER[prev]?1:-1, d=slideDist()*dir;
+    const dir=ORDER[page]>=ORDER[prev]?1:-1, d=slideDist()*dir;
     const outA=outgoing.animate(
       [{opacity:1,transform:'translate3d(0,0,0)'},
        {opacity:0,transform:`translate3d(${-d}px,0,0)`}],
@@ -1126,12 +1275,12 @@ void main(){
   }
 
   /* 品牌文字：首页第一屏只留图形 logo；滚过半屏进入第二屏后从下往上浮现。
-     作品页没有 hero 首屏，直接常显。 */
+     作品页与二级页没有 hero 首屏，直接常显。 */
   const navEl=document.querySelector('.nav');
   const globeScreen=document.querySelector('.globe-screen');
   let ticking=false;
   function syncBrand(){
-    const onWorks = !pages.works.hidden;
+    const onWorks = !pages.works.hidden || !pages.detail.hidden;
     const past = (scrollY||document.documentElement.scrollTop) > innerHeight*0.55;
     navEl.classList.toggle('text-in', onWorks || past);
   }
@@ -1155,11 +1304,314 @@ void main(){
   links.forEach(a=>a.addEventListener('click',e=>{
     if(a.dataset.route){ e.preventDefault(); location.hash='#/'+a.dataset.route; }
   }));
-  addEventListener('hashchange',()=>go((location.hash||'').replace('#/','')||'studio',true));
+  addEventListener('hashchange',()=>go(parseHash(),true));
 
-  /* 首帧直接落位不做动画：这里再滑一次会和进场动画打架 */
-  go((location.hash||'').replace('#/','')||'studio',false);
+  /* 首帧直接落位不做动画：这里再滑一次会和进场动画打架。
+     ⚠ 延到「作品二级页」模块初始化完之后再跑 —— 它挂在 window.__WD 上 */
+  window.__bootRoute=function(){ go(parseHash(),false); };
 })();
+
+/* ═══════════════════════════════════════════
+   4. 作品二级页 —— 左（一级+二级）/ 中（三级）/ 右（图片流）
+      数据 = 《网站的结构，以及素材的编号》整理出来的目录；
+      图片流里放的是**全部作品**（按原作品集页码升序），
+      所以「滚到底自然接下一个作品」是数据本身的性质，不需要任何拼接逻辑。
+      反过来，滚动位置是唯一的状态源 —— 菜单高亮由滚动反推。
+   ═══════════════════════════════════════════ */
+(function(){
+  var page=document.getElementById('page-detail');
+  if(!page) return;
+
+  /* ── 目录数据 ──────────────────────────────────────────────
+     S: 一级。s=slug / e=英文 / c=中文 / g=二级名（null = 不分二级） / w=作品下标
+     W: 作品。i=id / s=一级下标 / g=二级下标 / t=标题 / p=原页码 / m=[文件,宽,高] */
+  var D=/*__WORKS_DATA__*/{"S":[{"s":"logo","e":"Logo","c":"标志设计","g":[null],"w":[0]},{"s":"event","e":"Activity","c":"活动设计","g":["视觉设计","市集活动","品牌活动","城市品牌活动"],"w":[1,2,3,4,6,8,9,5,7]},{"s":"brand","e":"Brand","c":"品牌设计","g":["潮玩","餐饮","商业","城市","宠物","科技","工业","首饰"],"w":[10,11,12,13,15,16,20,21,22,14,19,17,18,26,23,24,25]},{"s":"pack","e":"Packaging","c":"包装设计","g":["宠物","餐饮","护肤","保健"],"w":[27,28,29,30,31,32,33,35,36,37,34,38]},{"s":"type","e":"Typsetting","c":"排版设计","g":[null],"w":[39]},{"s":"ip","e":"IP","c":"IP设计","g":[null],"w":[40,41,42,43]},{"s":"misc","e":"Other","c":"其他设计","g":["文化空间打造","展厅设计","视觉设计","详情页/公众号"],"w":[44,45,46,47,48,49,50,51]}],"W":[{"i":"w00","s":0,"g":0,"t":"Logo设计","p":"P4-P5","m":[["004.webp",3700,1600],["005.webp",3700,1600]]},{"i":"w01","s":1,"g":0,"t":"天马行空 云瞰中国年","p":"P7-P9","m":[["007.webp",3177,1787],["008.webp",4001,1643],["009.webp",3697,1735]]},{"i":"w02","s":1,"g":1,"t":"爱谁谁 放肆节","p":"P10-P12","m":[["010.webp",3227,984],["011.webp",2980,1994],["012.webp",4001,2251]]},{"i":"w03","s":1,"g":2,"t":"卡萨帝金杯咖啡 城市奇遇计划","p":"P13-P14","m":[["013.webp",3214,1360],["014.webp",4001,2251]]},{"i":"w04","s":1,"g":2,"t":"海尔洗衣机 穿行四季冰雪季","p":"P15-P18","m":[["015.webp",2943,1654],["016.webp",4001,2251],["017.webp",4001,2251],["018.webp",4001,2251]]},{"i":"w05","s":1,"g":3,"t":"青岛首届 宠物嘉年华","p":"P19-P20","m":[["019.webp",3225,2251],["020.webp",4001,2251]]},{"i":"w06","s":1,"g":2,"t":"青岛精酿生活节 宠爱有好时光","p":"P21-P22","m":[["021.webp",3224,2251],["022.webp",4001,2251]]},{"i":"w07","s":1,"g":3,"t":"市南区 “文明养犬” 主题实践活动","p":"P23-P24","m":[["023.webp",3224,2251],["024.webp",4001,2251]]},{"i":"w08","s":1,"g":2,"t":"2024海尔全球创客音乐节","p":"P25-P26","m":[["025.webp",3224,2251],["026.webp",4001,2251]]},{"i":"w09","s":1,"g":2,"t":"2024年青岛海誓山盟婚尚博览会","p":"P27-P28","m":[["027.webp",3100,1550],["028.webp",4001,2251]]},{"i":"w10","s":2,"g":0,"t":"夹兀 快乐制造机","p":"P30-P32","m":[["030.webp",4001,2251],["031.webp",4001,2251],["032.webp",4001,2251]]},{"i":"w11","s":2,"g":0,"t":"潮空间","p":"P33-P34","m":[["033.webp",4001,2251],["034.webp",4001,2251]]},{"i":"w12","s":2,"g":1,"t":"汉森九号 精酿酒馆","p":"P35-P36","m":[["035.webp",4001,2251],["036.webp",4001,2251]]},{"i":"w13","s":2,"g":1,"t":"探索软冰的世界之旅","p":"P37-P38","m":[["037.webp",4001,2251],["038.webp",4001,2251]]},{"i":"w14","s":2,"g":2,"t":"由甲律师","p":"P39-P40","m":[["039.webp",4001,2251],["040.webp",4001,2251]]},{"i":"w15","s":2,"g":1,"t":"白马河","p":"P41-P42","m":[["041.webp",4001,2251],["042.webp",4001,2251]]},{"i":"w16","s":2,"g":1,"t":"七盏","p":"P43-P44","m":[["043.webp",4001,2251],["044.webp",4001,2251]]},{"i":"w17","s":2,"g":3,"t":"世界最美海湾","p":"P45-P46","m":[["045.webp",4001,2251],["046.webp",4001,2251]]},{"i":"w18","s":2,"g":4,"t":"宠爱友好市","p":"P47-P48","m":[["047.webp",4001,2251],["048.webp",4001,2251]]},{"i":"w19","s":2,"g":2,"t":"Htinin","p":"P49-P50","m":[["049.webp",4001,2251],["050.webp",4001,2251]]},{"i":"w20","s":2,"g":1,"t":"鱼小闲","p":"P51-P52","m":[["051.webp",4001,2251],["052.webp",4001,2251]]},{"i":"w21","s":2,"g":1,"t":"会仙楼饭庄","p":"P53-P54","m":[["053.webp",4001,2251],["054.webp",4001,2251]]},{"i":"w22","s":2,"g":1,"t":"串花巷","p":"P55-P56","m":[["055.webp",4001,2251],["056.webp",4001,2251]]},{"i":"w23","s":2,"g":5,"t":"澳信能源","p":"P57-P58","m":[["057.webp",4001,2251],["058.webp",4001,2251]]},{"i":"w24","s":2,"g":6,"t":"中德建材","p":"P59-P60","m":[["059.webp",4001,2251],["060.webp",4001,2251]]},{"i":"w25","s":2,"g":7,"t":"奈川","p":"P61-P62","m":[["061.webp",4001,2251],["062.webp",4001,2251]]},{"i":"w26","s":2,"g":4,"t":"儒狼/似虎/寻踪","p":"P63-P68","m":[["063.webp",4001,2251],["064.webp",4001,2251],["065.webp",4001,2251],["066.webp",4001,2251],["067.webp",4001,2251],["068.webp",4001,2251]]},{"i":"w27","s":3,"g":0,"t":"派贝","p":"P70-P71","m":[["070.webp",4001,2251],["071.webp",4001,2251]]},{"i":"w28","s":3,"g":0,"t":"舔舔乐","p":"P72-P74","m":[["072.webp",4001,2251],["073.webp",4001,2251],["074.webp",4001,2251]]},{"i":"w29","s":3,"g":0,"t":"法宝","p":"P75-P76","m":[["075.webp",4001,2251],["076.webp",4001,2251]]},{"i":"w30","s":3,"g":1,"t":"白马河","p":"P77-P78","m":[["077.webp",4001,2251],["078.webp",4001,2251]]},{"i":"w31","s":3,"g":1,"t":"黑鱿精酿","p":"P79_1","m":[["079.webp",4001,2251]]},{"i":"w32","s":3,"g":1,"t":"醴之岛","p":"P79_2","m":[["079.webp",4001,2251]]},{"i":"w33","s":3,"g":1,"t":"崮上泉","p":"P80-P81","m":[["080.webp",4001,2251],["081.webp",4001,2251]]},{"i":"w34","s":3,"g":2,"t":"丞芙","p":"P82-P83","m":[["082.webp",4001,2251],["083.webp",4001,2251]]},{"i":"w35","s":3,"g":1,"t":"小泡茶","p":"P84-P85","m":[["084.webp",4001,2251],["085.webp",4001,2251]]},{"i":"w36","s":3,"g":1,"t":"牧美滋","p":"P86","m":[["086.webp",4001,2251]]},{"i":"w37","s":3,"g":1,"t":"莲藕荷叶膏","p":"P87","m":[["087.webp",4001,2251]]},{"i":"w38","s":3,"g":3,"t":"NeoSmart","p":"P88-P89","m":[["088.webp",4001,2251],["089.webp",4001,2251]]},{"i":"w39","s":4,"g":0,"t":"排版设计","p":"P91-P96","m":[["091.webp",4001,2251],["092.webp",4001,2251],["093.webp",4001,2251],["094.webp",4001,2251],["095.webp",4001,2251],["096.webp",4001,2251]]},{"i":"w40","s":5,"g":0,"t":"爱情博物馆","p":"P98-P99","m":[["098.webp",4001,2251],["099.webp",4001,2251]]},{"i":"w41","s":5,"g":0,"t":"澳柯玛","p":"P100","m":[["100.webp",4001,2251]]},{"i":"w42","s":5,"g":0,"t":"宠物友好街区","p":"P101-P102","m":[["101.webp",4001,2251],["102.webp",4001,2251]]},{"i":"w43","s":5,"g":0,"t":"乐青","p":"P103-P104","m":[["103.webp",4001,2251],["104.webp",4001,2251]]},{"i":"w44","s":6,"g":0,"t":"青岛往事","p":"P106-P107","m":[["106.webp",3224,2251],["107.webp",4001,2251]]},{"i":"w45","s":6,"g":1,"t":"青岛货币文化展","p":"P108-P109","m":[["108.webp",3245,2251],["109.webp",3645,1294]]},{"i":"w46","s":6,"g":2,"t":"音浪星球 律动之城","p":"P110","m":[["110.webp",3115,1854]]},{"i":"w47","s":6,"g":2,"t":"匠新共鉴 经典再现","p":"P111","m":[["111.webp",3105,1548]]},{"i":"w48","s":6,"g":2,"t":"2024宠物供应链展览会","p":"P112","m":[["112.webp",3230,1615]]},{"i":"w49","s":6,"g":2,"t":"2024海尔制冷产业全球峰会","p":"P113","m":[["113.webp",3797,1055]]},{"i":"w50","s":6,"g":3,"t":"翡冷翠","p":"P114-P115","m":[["114.webp",3200,2251],["115.webp",3200,2251]]},{"i":"w51","s":6,"g":3,"t":"青啤吨吨杯","p":"P116","m":[["116.webp",3200,2251]]}]};
+
+  var L1=document.getElementById('wdL1');
+  var L2ROW=document.getElementById('wdL2Row');
+  var L3=document.getElementById('wdL3');
+  var LIST=document.getElementById('wdList');
+  var FEED=document.getElementById('wdFeed');
+  var FEEDIN=document.getElementById('wdFeedIn');
+  var IMGDIR='works/';
+
+  var NARROW=matchMedia('(max-width:1023.98px)');
+  var reduce=matchMedia('(prefers-reduced-motion: reduce)');
+
+  /* 图片流一次性建好：107 张用 loading=lazy 交给浏览器按需取，
+     只有首图 eager。宽高属性必须写 —— 图片没解码时也要占住高度，
+     否则偏移表全错、菜单会被算到错的作品上。 */
+  (function buildFeed(){
+    var h='';
+    for(var i=0;i<D.W.length;i++){
+      var w=D.W[i];
+      h+='<article class="wd-work" data-w="'+i+'"><p class="wd-cap">'
+       + '<span class="wd-cap-t">'+esc(w.t)+'</span>'
+       + '<span class="wd-cap-p">'+esc(w.p)+'</span></p>';
+      for(var k=0;k<w.m.length;k++){
+        var m=w.m[k];
+        h+='<img class="wd-img" src="'+IMGDIR+m[0]+'" width="'+m[1]+'" height="'+m[2]+'"'
+         + ' loading="'+(i===0?'eager':'lazy')+'" decoding="async" draggable="false"'
+         + ' alt="'+esc(w.t)+' 第 '+(k+1)+' 张">';
+      }
+      h+='</article>';
+    }
+    FEEDIN.innerHTML=h;
+  })();
+
+  var works=[].slice.call(FEEDIN.querySelectorAll('.wd-work'));
+
+  function esc(s){
+    return String(s).replace(/[&<>"]/g,function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+    });
+  }
+
+  /* 当前状态：workIdx 是唯一真源，一级 / 二级 / 三级的高亮全部由它派生 */
+  var workIdx=-1, secIdx=0, curGrp=0;
+  var offs=[], lock=null, raf=0, lastW=0;
+
+  function measure(){
+    if(page.hidden) return;
+    offs=works.map(function(el){ return [el.offsetTop,el.offsetHeight]; });
+    /* 宽度变了 ⇒ 每张图的高度全变 ⇒ 原来的 scrollTop 会落到别的作品上。
+       把视图重新锚回当前作品，否则旋屏 / 拉窗口时菜单会和画面对不上。 */
+    var w=FEED.clientWidth, changed=(lastW>0 && Math.abs(w-lastW)>1);
+    lastW=w;
+    if(!changed) return;
+    var el=works[workIdx];
+    if(el) FEED.scrollTop=Math.max(0, el.offsetTop-10);
+  }
+
+  /* 把当前项带进视野：
+     窄屏三行 chips 是横向滚动的，激活项经常在屏幕外（比如从 Other 进页，
+     一级行里 Other 在最右）；桌面则只在面板比视口高时兜一下。 */
+  var revealRaf=0, revealLeft=0;
+  /* 重建面板会把 chips 的滚动位置清零，而重建与 reveal 之间可能隔着一次
+     异步的滚动反推 —— 所以每次状态变化都连兜几帧（首帧排版常常还没算完），
+     并且用「绝对位置」而不是 `+=`：相对累加碰上被清零的 scrollLeft 就等于没滚。 */
+  function scheduleReveal(){
+    if(revealRaf) return;
+    revealLeft=3;
+    var step=function(){
+      revealRaf=0;
+      if(page.hidden){ revealLeft=0; return; }
+      reveal();
+      if(--revealLeft>0) revealRaf=requestAnimationFrame(step);
+    };
+    revealRaf=requestAnimationFrame(step);
+  }
+  function reveal(){
+    var panel=page.querySelector('.wd-nav');
+    var on1=L1.querySelector('.wd-l1li.is-on .wd-l1b');
+    if(!NARROW.matches){
+      if(panel && on1){
+        var nb=panel.getBoundingClientRect(), ob=on1.getBoundingClientRect();
+        if(ob.top<nb.top+8) panel.scrollTop += ob.top-nb.top-8;
+        else if(ob.bottom>nb.bottom-8) panel.scrollTop += ob.bottom-nb.bottom+8;
+      }
+      return;
+    }
+    var els=[on1, L2ROW.querySelector('.wd-l2b.is-on'), L3.querySelector('.wd-l3b.is-on')];
+    for(var i=0;i<els.length;i++){
+      var el=els[i]; if(!el || !el.closest) continue;
+      var ol=el.closest('ol'); if(!ol) continue;
+      var b=ol.getBoundingClientRect(), r=el.getBoundingClientRect();
+      if(!b.width) continue;
+      /* 元素在「滚动内容」里的绝对位置 = 屏幕位置差 + 当前滚动量 */
+      var at=(r.left-b.left)+ol.scrollLeft;
+      var want=at-(ol.clientWidth-r.width)/2;
+      var max=Math.max(0, ol.scrollWidth-ol.clientWidth);
+      ol.scrollLeft=Math.max(0, Math.min(want, max));
+    }
+  }
+
+  /* ── 左：一级 + 二级 ──
+     ⚠ 面板「只建一次」，之后展开/收起、高亮、显隐全是切 class ——
+     重建 innerHTML 会把 chips 的横向滚动位置清零，而「当前项自动带进视野」
+     全靠这个位置，重建与归位之间就会留下竞态。 */
+  function buildPanel(){
+    var h='', r='';
+    for(var i=0;i<D.S.length;i++){
+      var s=D.S[i], hasG=(s.g[0]!==null);
+      h+='<li class="wd-l1li" data-sec="'+i+'">'
+       + '<button type="button" class="wd-l1b" data-l1="'+i+'">'
+       + '<span class="wd-en">'+esc(s.e)+'</span>'
+       + '<span class="wd-cn">'+esc(s.c)+'</span></button>';
+      if(hasG){
+        h+='<ol class="wd-l2">';
+        for(var g=0;g<s.g.length;g++){
+          h+='<li><button type="button" class="wd-l2b" data-sec="'+i+'" data-g="'+g+'"'
+           + ' data-w="'+firstOfGroup(s,g)+'">'+esc(s.g[g])+'</button></li>';
+          /* 窄屏那一行：7 个一级的二级全排在一起，靠 hidden 只留当前一级的 */
+          r+='<li hidden><button type="button" class="wd-l2b" data-sec="'+i+'" data-g="'+g+'"'
+           + ' data-w="'+firstOfGroup(s,g)+'">'+esc(s.g[g])+'</button></li>';
+        }
+        h+='</ol>';
+      }
+      h+='</li>';
+    }
+    L1.innerHTML=h;
+    L2ROW.innerHTML=r;
+    markPanel();
+  }
+  function firstOfGroup(s,g){
+    for(var i=0;i<s.w.length;i++) if(D.W[s.w[i]].g===g) return s.w[i];
+    return s.w[0];
+  }
+  function markPanel(){
+    var lis=L1.children;
+    for(var i=0;i<lis.length;i++){
+      var on=(i===secIdx);
+      lis[i].classList.toggle('is-on', on);
+      lis[i].classList.toggle('is-open', on);
+    }
+    /* 桌面面板：只给「当前一级 + 当前二级」那一项标高亮 */
+    var bs=L1.querySelectorAll('.wd-l2b');
+    for(var k=0;k<bs.length;k++){
+      bs[k].classList.toggle('is-on', +bs[k].dataset.sec===secIdx && +bs[k].dataset.g===curGrp);
+    }
+    /* 窄屏那一行：7 个一级的二级全在 DOM 里，只有当前一级的 li 可见。
+       ⚠ 高亮必须跟着可见性一起给 —— 若给隐藏项也加 is-on，
+       reveal() 里的 querySelector('.wd-l2b.is-on') 会命中屏幕外那个、
+       量到 0 宽被 `if(!b.width) continue` 跳过，chips 就永远不自动归位。 */
+    var rs=L2ROW.children;
+    for(var j=0;j<rs.length;j++){
+      var b=rs[j].firstElementChild;
+      var vis=(+b.dataset.sec===secIdx);
+      rs[j].hidden=!vis;
+      b.classList.toggle('is-on', vis && +b.dataset.g===curGrp);
+    }
+  }
+
+  /* ── 中：三级 ──
+     同样只建一次：52 个作品全排进去，靠 hidden 只留「当前一级 + 当前二级」的。
+     好处一样 —— 横向 chips 的滚动位置不会在切作品时被清零。 */
+  function buildList(){
+    var h='';
+    for(var i=0;i<D.W.length;i++){
+      var w=D.W[i];
+      h+='<li hidden><button type="button" class="wd-l3b" data-w="'+i+'"'
+       + ' data-sec="'+w.s+'" data-g="'+w.g+'">'+esc(w.t)+'</button></li>';
+    }
+    L3.innerHTML=h;
+  }
+  function markList(){
+    var ls=L3.children, any=false;
+    for(var i=0;i<ls.length;i++){
+      var b=ls[i].firstElementChild;
+      var show=(+b.dataset.sec===secIdx && +b.dataset.g===curGrp);
+      ls[i].hidden=!show;
+      if(show) any=true;
+      b.classList.toggle('is-on', +b.dataset.w===workIdx);
+    }
+    /* 「没有三级就不展示」的兜底（用 class，见 .wd-list.is-empty 那段注释） */
+    LIST.classList.toggle('is-empty', !any);
+  }
+
+  /* 状态变了只切 class —— 面板与列表在 init 时一次性建好（见 buildPanel / buildList）。
+     这样 chips 的横向滚动位置不会在切作品时被重建清零，reveal() 才有稳定的量可对。 */
+  function apply(){
+    markPanel();
+    markList();
+    reveal();
+    scheduleReveal();
+  }
+
+  function setActive(i){
+    if(i===workIdx || !D.W[i]) return;
+    workIdx=i;
+    var w=D.W[i]; secIdx=w.s; curGrp=w.g;
+    apply();
+  }
+
+  /* ── 滚动 → 反推当前作品 ── */
+  function sync(){
+    if(lock){
+      /* 锁到「确实滚到目标」为止，另加超时兜底（目标可能被 maxScroll 夹住） */
+      if(performance.now()<lock.until && Math.abs(FEED.scrollTop-lock.top)>3) return;
+      lock=null;
+    }
+    var y=FEED.scrollTop+FEED.clientHeight*0.42, hit=0;
+    for(var k=0;k<offs.length;k++){ if(offs[k][0]<=y) hit=k; else break; }
+    /* 滚到底：最后一个作品往往整段都落在判定线以下（视口越矮越明显，
+       窄屏 664px 高时它压根够不到 42% 那条线），但用户已经滚无可滚 ——
+       直接把它算作当前，顺便消掉「桌面高亮末件、手机高亮倒数第二件」的不一致 */
+    if(FEED.scrollTop >= FEED.scrollHeight-FEED.clientHeight-1) hit=offs.length-1;
+    setActive(hit);
+  }
+  FEED.addEventListener('scroll',function(){
+    if(raf) return;
+    raf=requestAnimationFrame(function(){ raf=0; sync(); });
+  },{passive:true});
+
+  /* 点菜单：立刻切换高亮，同时把图片流滚到那个作品 */
+  function jump(i){
+    var el=works[i];
+    if(!el) return;
+    setActive(i);
+    var top=Math.max(0, el.offsetTop-10);
+    if(reduce.matches){ FEED.scrollTop=top; return; }
+    lock={top:top, until:performance.now()+1400};
+    FEED.scrollTo({top:top,behavior:'smooth'});
+  }
+
+  page.addEventListener('click',function(e){
+    var t=e.target.closest ? e.target.closest('button') : null;
+    if(!t || !page.contains(t)) return;
+    if(t.dataset.w!==undefined){ jump(+t.dataset.w); return; }
+    if(t.dataset.l1!==undefined){ jump(D.S[+t.dataset.l1].w[0]); }
+  });
+
+  /* ⚠ 归位必须绑在「任何会改变 chips 宽度的信号」上，不能只在切状态时做一次。
+     实测坑：移动端布局视口先用 980px 起算（<meta viewport> 生效前 innerWidth=980），
+     此刻 7 个一级 chip 一共 818px < 945 根本没溢出 ⇒ reveal 算出 0 并写 0；
+     接着视口落到 390（chips 变成 818 > 355，有溢出了），
+     但 resize 只量了偏移表、没重新归位 ⇒ 激活项永远停在屏幕外。
+     这条和「字体替换后 chips 变宽」是同一类问题，所以一并挂上 ResizeObserver。 */
+  addEventListener('resize',function(){ measure(); if(!lock) sync(); scheduleReveal(); },{passive:true});
+  if('ResizeObserver' in window){
+    /* 只观察 ol 的盒子尺寸（视口落定 / 旋屏会改它）。
+       reveal 只写 scrollLeft，不改盒子 ⇒ 不会自我循环。 */
+    var ro=new ResizeObserver(function(){ if(!page.hidden) scheduleReveal(); });
+    ro.observe(L1); ro.observe(L2ROW); ro.observe(L3); ro.observe(LIST);
+  }
+  /* 跨过 1023.98 断点时 chips 与面板换了形态 ⇒ 高亮要重切一遍、滚动位置要重算 */
+  NARROW.addEventListener('change',function(){ apply(); measure(); });
+
+  /* 进页：落到 slug 对应的一级，并把图片流摆到它的第一个作品。
+     ⚠ 这里是同步量偏移 —— 等下一帧会先闪一下首图。 */
+  function enter(slug){
+    var si=0;
+    for(var i=0;i<D.S.length;i++) if(D.S[i].s===slug){ si=i; break; }
+    var first=D.S[si].w[0];
+    workIdx=first; secIdx=si; curGrp=D.W[first].g;
+    apply();
+    lock=null;
+    measure();
+    var el=works[first];
+    FEED.scrollTop = el ? Math.max(0, el.offsetTop-10) : 0;
+    reveal();
+    /* 首帧的排版可能还没算完（媒体查询刚生效、字体还没替换），下一帧再兜一次 */
+    scheduleReveal();
+  }
+
+  /* 面板 / 三级列表 / 图片流都在这里一次性建好，之后只切 class。
+     ⚠ 必须在首次 enter() 之前跑完 —— 它挂在 window.__WD 上，
+     而 __bootRoute 在本文件最后才执行（那时这里早已初始化完毕）。 */
+  buildPanel();
+  buildList();
+
+  /* 字体替换会改变 chips 的宽度 ⇒ 激活项可能又被推出视野 */
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(function(){ if(!page.hidden) scheduleReveal(); });
+  }
+
+  window.__WD={enter:enter, reveal:reveal, measure:measure};
+})();
+
+/* 所有模块都就位了，再跑首帧路由（见第 3 块末尾） */
+if(window.__bootRoute) window.__bootRoute();
 
 /* ═══════════════════════════════════════════
    5. 第 2 屏：3D 品牌球

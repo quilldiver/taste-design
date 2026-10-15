@@ -21,12 +21,22 @@ export const useSwipeNav = () => useContext(SwipeCtx);
 
 /* 导航顺序决定滑动方向。挂在子路径下部署时 usePathname() 不返回 basePath，
    一律按「最后一段」判断，免得 /taste-design/works 匹配不上 */
-const ORDER: Record<string, number> = { "/": 0, "/works": 1 };
+const segs = (h: string) => (h || "/").split("/").filter(Boolean);
 const tail = (h: string) => {
-  const k = (h || "/").replace(/\/+$/, "") || "/";
-  return k.slice(k.lastIndexOf("/")) || "/";
+  const s = segs(h);
+  return s.length ? `/${s[s.length - 1]}` : "/";
 };
-const rank = (h: string) => ORDER[tail(h)] ?? 0;
+/** 层级：#/ = 0、/works = 1、/works/<一级> = 2 —— 越深越靠右 */
+const rank = (h: string) => {
+  const s = segs(h);
+  if (!s.length || s[0] !== "works") return 0;
+  return s.length === 1 ? 1 : 2;
+};
+/** 文档本身不滚动的两页（我们 / 作品二级页）：竖条挂在那儿只会碍眼 */
+const quietScrollbar = (h: string) => {
+  const s = segs(h);
+  return s.length === 0 || (s[0] === "works" && s.length > 1);
+};
 
 const OUT_MS = 220;
 const IN_MS = 360;
@@ -61,9 +71,9 @@ export default function PageSwipe({ children }: { children: React.ReactNode }) {
   const dir = useRef(1);
   const busy = useRef(false);
 
-  /* 「我们」三屏长页面会把竖滚动条常驻显示，这里按需隐藏外观；作品页只有一屏不需要 */
+  /* 「我们」与作品二级页的文档本身不滚动，竖条挂在那儿只是噪音，按需隐藏外观 */
   useEffect(() => {
-    document.documentElement.classList.toggle("no-bars", tail(pathname) === "/");
+    document.documentElement.classList.toggle("no-bars", quietScrollbar(pathname));
   }, [pathname]);
 
   /* 路由变了 ⇒ 新页面从侧面滑进来（离开动画在点击时已经播完） */
