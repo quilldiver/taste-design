@@ -328,21 +328,6 @@ main{position:relative;z-index:1}
 @media (max-width:1024px){.tilt{--s:.78}}
 @media (max-width:640px){.tilt{--s:.62;--rz:-16deg;--rx:-38deg}}
 
-/* ── 预留屏空状态 ── */
-.empty{position:relative;border:1px dashed rgba(255,255,255,.22);border-radius:4px}
-.empty::before,.empty::after{content:"";position:absolute;width:10px;height:10px;
-  border:0 solid rgba(255,255,255,.5)}
-.empty::before{top:-1px;left:-1px;border-top-width:1px;border-left-width:1px}
-.empty::after{right:-1px;bottom:-1px;border-bottom-width:1px;border-right-width:1px}
-/* 三屏统一 100svh，吸附点等距 */
-/* 纯黑底：不透明，直接盖住底层 shader / 压暗层 / 颗粒层 */
-.reserved{min-height:100svh;display:flex;align-items:center;padding-block:6rem;
-  background:#000}
-.reserved .empty{min-height:26rem;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:1rem;text-align:center;padding:1.5rem}
-.reserved h2{margin:0;font-size:clamp(1.6rem,3.4vw,2.6rem);color:rgba(255,255,255,.9)}
-.reserved p{max-width:30rem;margin:0;color:var(--mute);font-size:.95rem}
-
 /* ── 第 3 屏 联系 ── */
 .contact{min-height:100svh;display:flex;align-items:center;padding-block:7rem}
 .contact h2{margin:1.25rem 0 0;max-width:22ch;font-size:clamp(2.2rem,5.6vw,4.6rem)}
@@ -371,22 +356,71 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
 .works-page{min-height:100svh;padding-block:8rem 7rem}
 .works-page h1{margin:1.25rem 0 0;font-size:clamp(2.6rem,6.4vw,5.2rem)}
 .works-page h1 .sub{margin-top:.5rem;display:block;font-size:.4em;letter-spacing:.06em;color:var(--mute)}
-.filters{margin-top:3rem;border-block:1px solid rgba(255,255,255,.1)}
-.filters .row{display:flex;gap:.25rem;overflow-x:auto;padding-block:.5rem}
-.filters button{display:inline-flex;align-items:center;gap:.5rem;flex:none;min-height:44px;
-  padding:0 1rem;border:0;border-radius:3px;background:transparent;cursor:pointer;
-  font-family:inherit;font-size:.95rem;color:var(--mute);transition:background-color .2s ease,color .2s ease}
-.filters button:hover{background:rgba(255,255,255,.05);color:var(--ink)}
-.filters button[aria-pressed="true"]{background:rgba(255,255,255,.12);color:var(--ink)}
-.filters .en{font-family:var(--f-mono);font-size:.66rem;letter-spacing:.18em;color:var(--mute)}
-.count{margin:3.5rem 0 0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;color:var(--mute)}
-.grid-empty{margin-top:1.5rem;min-height:28rem;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:1rem;text-align:center;padding:1.5rem}
-.grid-empty h3{margin:0;font-size:clamp(1.5rem,3.2vw,2.4rem);font-weight:600;color:rgba(255,255,255,.9)}
-.grid-empty p{max-width:30rem;margin:0;font-size:.95rem;color:var(--mute)}
+/* ── 作品页：Deckshift 式重叠牌堆 ──
+   静止：七张卡横向叠放、各自带一点固定倾斜，像一副没理齐的牌；
+   悬停 / 聚焦 / 点击某一张 ⇒ 它浮起当主角，两侧按距离被弹簧推开再小幅回弹；
+   <1024px 还原成干净的单列列表。 */
+.deck{--cw:clamp(178px,16.5vw,258px);            /* 卡片宽 */
+  --ov:clamp(96px,8.6vw,138px);                  /* 相邻重叠量 ≈ 0.53 卡宽 */
+  --push:clamp(30px,4.4vw,80px);                 /* 每推开一格的位移（步长递减见 shiftOf） */
+  display:flex;justify-content:center;align-items:stretch;
+  padding-block:2.5rem 3rem;margin:0;list-style:none}
+.deck-cell{position:relative;min-width:0}
+.deck-cell + .deck-cell{margin-left:calc(-1 * var(--ov))}
+.deck-card{position:relative;width:var(--cw);aspect-ratio:3 / 4.15;
+  border:1px solid rgba(255,255,255,.16);border-radius:14px;
+  background:linear-gradient(165deg,#0b1f4f 0%,#030815 72%);overflow:hidden;
+  /* 位移 / 倾斜 / 浮起缩放合成一个 transform，交给同一次过渡 */
+  transform:translateX(calc(var(--shift,0) * var(--push)))
+    rotate(var(--tilt,0deg)) translateY(var(--lift,0px)) scale(var(--zs,1));
+  /* 弹性曲线：轻微过冲后收回（overshoot + recoil） */
+  transition:transform .58s cubic-bezier(.19,1.26,.28,1),
+    box-shadow .38s ease,border-color .38s ease;
+  will-change:transform}
+/* 顶部冷光：把卡片从深底里托出来，只在聚焦时亮起 */
+.deck-card::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:radial-gradient(120% 60% at 50% -10%,rgba(92,152,246,.2),transparent 62%);
+  transition:opacity .38s ease}
+.deck-card.is-active{--lift:-14px;--zs:1.055;border-color:rgba(255,255,255,.42);
+  /* 模糊压到 24px：3D/缩放层上的大模糊会让 Chrome 下调栅格分辨率、字发虚 */
+  box-shadow:0 10px 24px -12px rgba(0,0,0,.9)}
+.deck-card.is-active::before{opacity:1}
+.deck-face{position:relative;z-index:2;height:100%;display:grid;
+  grid-template-rows:auto 1fr auto;padding:1.05rem 1.1rem 1.2rem}
+.deck-idx{display:flex;align-items:center;gap:.55rem;margin:0;
+  font-family:var(--f-mono);font-size:.68rem;letter-spacing:.2em;color:var(--mute)}
+.deck-dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.35)}
+.deck-icon{align-self:center;justify-self:start;width:clamp(46px,3.6vw,58px);
+  color:rgba(255,255,255,.72);
+  transition:color .38s ease,transform .58s cubic-bezier(.19,1.26,.28,1)}
+.deck-card.is-active .deck-icon{color:var(--ink);transform:scale(1.06)}
+.deck-icon svg{display:block;width:100%;height:auto}
+.deck-title{margin:0;font-family:var(--f-display);font-weight:620;font-stretch:97%;
+  font-size:clamp(1.1rem,1.5vw,1.4rem);line-height:1.15;color:var(--ink)}
+.deck-en{margin-top:.3rem;font-family:var(--f-mono);font-size:.62rem;letter-spacing:.2em;color:var(--mute)}
+/* 说明只在聚焦时展开，静止态保持干净的标题节奏 */
+.deck-note{margin-top:.5rem;font-size:.8rem;line-height:1.6;color:var(--mute);
+  opacity:0;max-height:0;overflow:hidden;
+  transition:opacity .38s ease,max-height .58s cubic-bezier(.19,1.26,.28,1)}
+.deck-card.is-active .deck-note{opacity:1;max-height:4.5rem}
+/* 命中层：铺满整卡，键盘可聚焦、鼠标可悬停、触屏可点 */
+.deck-hit{position:absolute;inset:0;z-index:5;background:none;border:0;padding:0;cursor:pointer}
+@media (max-width:1023px){
+  .deck{display:grid;grid-template-columns:1fr;gap:.9rem;padding-block:0}
+  .deck-cell + .deck-cell{margin-left:0}
+  .deck-card{width:100%;aspect-ratio:auto;transform:none;border-radius:12px}
+  .deck-card.is-active{--lift:0px;--zs:1;box-shadow:none}
+  .deck-card.is-active::before{opacity:0}
+  /* 单列：图标在左、文案在右，编号挪到右上角 */
+  .deck-face{display:flex;align-items:center;gap:1.1rem;height:auto;padding:1.05rem 1.15rem}
+  .deck-idx{position:absolute;top:.9rem;right:1.15rem}
+  .deck-icon{flex:0 0 auto;width:44px;align-self:auto;justify-self:auto}
+  .deck-card.is-active .deck-icon{transform:none}
+  .deck-note{opacity:1;max-height:none}
+}
 
 /* 小号英文标签统一 500：Agile 可变轴默认落在 Thin，不显式给字重会过细 */
-.label,.menu .en,.brand span,.meta dt,.count,.back-mark,.cap .idx,.cap .typ,footer p,.filters .en,.menu .cn{font-weight:500}
+.label,.menu .en,.brand span,.meta dt,.back-mark,.cap .idx,.cap .typ,footer p,.deck-idx,.deck-en,.menu .cn{font-weight:500}
 
 [hidden]{display:none !important}
 
@@ -496,20 +530,11 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
           <span class="sub">Works</span>
         </h1>
         <p class="lede" style="margin:1.5rem 0 0;max-width:34rem;font-size:1.0625rem;line-height:1.75;color:var(--mute)">
-          按类型归档的出品记录。每一件都写清了配方与火候。
+          七个方向的出品记录。把光标放到任意一张上，整叠牌会为它让出位置。
         </p>
 
-        <div class="filters">
-          <div class="row" id="filters" aria-label="作品类型"></div>
-        </div>
-
-        <p class="count" id="count"></p>
-
-        <div class="empty grid-empty">
-          <p class="label">Empty — Awaiting Works</p>
-          <h3 class="display" id="empty-title"></h3>
-          <p>作品数据接入后会按类型在这里自动分组展示。</p>
-        </div>
+        <!-- 牌堆由 JS 生成（见脚本第 3 块） -->
+        <ul class="deck" id="deck"></ul>
       </div>
     </section>
   </div>
@@ -839,36 +864,90 @@ void main(){
 })();
 
 /* ═══════════════════════════════════════════
-   3. 极简路由 + 作品类型筛选
+   3. 极简路由 + 作品页牌堆（Deckshift 式重叠牌堆）
    ═══════════════════════════════════════════ */
 (function(){
-  const TYPES=[
-    {id:'all',    label:'全部',     en:'ALL'},
-    {id:'brand',  label:'品牌识别', en:'BRAND'},
-    {id:'web',    label:'网站与数字', en:'WEB'},
-    {id:'graphic',label:'视觉与平面', en:'GRAPHIC'},
-    {id:'space',  label:'空间与陈列', en:'SPACE'},
-    {id:'type',   label:'字体与排版', en:'TYPE'}
+  /* 七类出品记录。图标统一 64×64 线稿、1.6 描边，随卡面文字色变化 */
+  const ICONS={
+    logo:'<circle cx="32" cy="32" r="21"/><path d="M25 43V24h11a6 6 0 0 1 0 12h-11"/>',
+    brand:'<rect x="9" y="13" width="31" height="31" rx="5"/><rect x="24" y="20" width="31" height="31" rx="5"/>',
+    event:'<circle cx="32" cy="32" r="7"/><path d="M32 6v11M32 47v11M6 32h11M47 32h11"/><path d="M14 14l8 8M42 42l8 8M50 14l-8 8M22 42l-8 8"/>',
+    pack:'<path d="M32 8l22 12-22 12L10 20 32 8z"/><path d="M10 20v22l22 13V33"/><path d="M32 33l22 12V22"/>',
+    type:'<path d="M14 46l12-30 12 30M19 33h14"/><path d="M42 14h16M42 25h16M42 36h16M42 47h10"/>',
+    ip:'<circle cx="32" cy="35" r="18"/><circle cx="25" cy="31" r="1.7"/><circle cx="39" cy="31" r="1.7"/><path d="M25 40c2 3 4 4.4 7 4.4S37 43 39 40"/><path d="M20 18l-4-7M44 18l4-7"/>',
+    misc:[14,32,50].map(y=>[14,32,50].map(x=>`<circle cx="${x}" cy="${y}" r="3.2"/>`).join('')).join('')
+  };
+  const DECKS=[
+    {kind:'logo', idx:'001', cn:'标志设计', en:'LOGO',         note:'一个符号，撑住所有触点'},
+    {kind:'brand',idx:'002', cn:'品牌设计', en:'BRANDING',     note:'把调性与规矩写成能复用的系统'},
+    {kind:'event',idx:'003', cn:'活动设计', en:'CAMPAIGN',     note:'限时、限地，一次说清一件事'},
+    {kind:'pack', idx:'004', cn:'包装设计', en:'PACKAGING',    note:'货架上的三秒决断'},
+    {kind:'type', idx:'005', cn:'排版设计', en:'TYPOGRAPHY',   note:'字距与行距里的呼吸节奏'},
+    {kind:'ip',   idx:'006', cn:'IP设计',   en:'IP & MASCOT',  note:'能被记住，也能被延展'},
+    {kind:'misc', idx:'007', cn:'其他设计', en:'MISCELLANEOUS',note:'不好归类的好东西'}
   ];
+  /* 写死的倾斜角：随机值每次刷新都在变，牌堆会失去「同一副牌」的稳定感 */
+  const TILT=[-2.6,1.5,-1.1,2.4,-2.9,1.2,-1.8];
+  /* 推开步长递减：离主角越近让位越多，远处增速放缓，避免把整排推出版心 */
+  const STEP=[0,1,2.2,3.1];
 
   const pages={studio:document.getElementById('page-studio'),works:document.getElementById('page-works')};
   const links=[...document.querySelectorAll('[data-route]')];
-  let activeType='all';
+  const deck=document.getElementById('deck');
+  let active=null;
 
-  function renderFilters(){
-    const row=document.getElementById('filters');
-    row.innerHTML=TYPES.map(t=>`
-      <button type="button" data-type="${t.id}" aria-pressed="${t.id===activeType}">
-        <span>${t.label}</span><span class="en">${t.en}</span>
-      </button>`).join('');
-    row.querySelectorAll('button').forEach(b=>{
-      b.addEventListener('click',()=>{ activeType=b.dataset.type; renderFilters(); renderEmpty(); });
+  /* 牌堆：DOM 只建一次，之后只改 class / CSS 变量 —— 重建 DOM 会丢掉过渡动画 */
+  let cards=[], cells=[], hits=[];
+  if(deck){
+    deck.innerHTML=DECKS.map((d,i)=>`
+      <li class="deck-cell">
+        <article class="deck-card" style="--tilt:${TILT[i%TILT.length]}deg">
+          <div class="deck-face">
+            <p class="deck-idx">${d.idx}<span class="deck-dot" aria-hidden="true"></span></p>
+            <span class="deck-icon" aria-hidden="true">
+              <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.6">${ICONS[d.kind]}</svg>
+            </span>
+            <div>
+              <h2 class="deck-title">${d.cn}</h2>
+              <p class="deck-en">${d.en}</p>
+              <p class="deck-note">${d.note}</p>
+            </div>
+          </div>
+          <button type="button" class="deck-hit" aria-pressed="false" aria-label="${d.cn} ${d.en}"></button>
+        </article>
+      </li>`).join('');
+    cells=[...deck.querySelectorAll('.deck-cell')];
+    cards=[...deck.querySelectorAll('.deck-card')];
+    hits =[...deck.querySelectorAll('.deck-hit')];
+
+    cards.forEach((c,i)=>c.addEventListener('mouseenter',()=>setActive(i)));
+    deck.addEventListener('mouseleave',()=>setActive(null));
+    hits.forEach((h,i)=>{
+      h.addEventListener('focus',()=>setActive(i));
+      h.addEventListener('blur', ()=>{ if(active===i) setActive(null); });
+      /* 触屏：点一下等同悬停，再点取消（不需要精确控制指针） */
+      h.addEventListener('click',()=>setActive(active===i?null:i));
     });
+    applyDeck();
   }
-  function renderEmpty(){
-    const cur=TYPES.find(t=>t.id===activeType);
-    document.getElementById('count').textContent = cur.en+' — 000 件';
-    document.getElementById('empty-title').textContent = '「'+cur.label+'」还没有出品';
+
+  function shiftOf(i){
+    if(active===null) return 0;
+    const d=i-active;
+    if(!d) return 0;
+    const a=Math.abs(d);
+    const f=a<=3?STEP[a]:3.1+(a-3)*0.4;
+    return (d>0?1:-1)*f;
+  }
+  function setActive(i){ active=i; applyDeck(); }
+  function applyDeck(){
+    cards.forEach((c,i)=>{
+      const on=i===active;
+      c.classList.toggle('is-active',on);
+      c.style.setProperty('--shift',shiftOf(i));
+    });
+    cells.forEach((cell,i)=>{ cell.style.zIndex=(i===active?30:10+i); });
+    hits.forEach((h,i)=>h.setAttribute('aria-pressed',String(i===active)));
   }
 
   function go(route){
@@ -917,7 +996,6 @@ void main(){
   }));
   addEventListener('hashchange',()=>go((location.hash||'').replace('#/','')||'studio'));
 
-  renderFilters(); renderEmpty();
   go((location.hash||'').replace('#/','')||'studio');
 })();
 
