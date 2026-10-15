@@ -8,11 +8,11 @@ export const metadata: Metadata = {
 
 export default function WorksPage() {
   return (
-    <section className="relative min-h-[100svh] px-5 pt-[clamp(6.5rem,12svh,8rem)] pb-[clamp(3rem,9svh,7rem)] sm:px-8 sm:pt-[clamp(6.5rem,12svh,10rem)]">
+    <section className="relative flex min-h-[100svh] flex-col justify-center px-5 pt-[clamp(6rem,9svh,7rem)] pb-[clamp(3.5rem,11svh,7.5rem)] sm:px-8 sm:pt-[clamp(6rem,9svh,9rem)]">
       <div className="mx-auto w-full max-w-[1680px]">
         <p className="label">Selected Works</p>
 
-        <h1 className="display mt-[clamp(0.75rem,2svh,1.25rem)] text-[clamp(2.2rem,min(6.4vw,8svh),5.2rem)]">
+        <h1 className="display mt-[clamp(0.5rem,1.6svh,1rem)] text-[clamp(2.2rem,min(6.4vw,6.4svh),4.4rem)]">
           <span className="block">作品</span>
           <span className="mt-2 block text-[0.4em] tracking-[0.06em] text-mute">
             Works

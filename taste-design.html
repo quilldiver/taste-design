@@ -354,9 +354,14 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
 
 /* ── 作品页 ── */
 .works-page{min-height:100svh;
-  /* 上下留白跟窗口高度收放：矮窗口把空间让给牌堆（下限保证不被固定导航压住） */
-  padding-block:clamp(6.5rem,12svh,8rem) clamp(3rem,9svh,7rem)}
-.works-page h1{margin:clamp(.75rem,2svh,1.25rem) 0 0;font-size:clamp(2.2rem,min(6.4vw,8svh),5.2rem)}
+  /* 上留白只需越过固定导航（实测 80px 高），下留白略多于上方 —— 因为标题区
+     会把牌堆整体往下推，两段留白不等量时牌堆就不在画面中心 */
+  padding-block:clamp(6rem,9svh,7rem) clamp(3.5rem,11svh,7.5rem);
+  /* 内容不足一屏时整块（标题 + 牌堆）在可用区里垂直居中，
+     而不是把剩余空间全留在底部——大屏下底部曾是 195px 空黑边 */
+  display:flex;flex-direction:column;justify-content:center}
+/* 标题跟着窗口高度收，避免它把牌堆顶出画面中心 */
+.works-page h1{margin:clamp(.5rem,1.6svh,1rem) 0 0;font-size:clamp(2.2rem,min(6.4vw,6.4svh),4.4rem)}
 .works-page h1 .sub{margin-top:.5rem;display:block;font-size:.4em;letter-spacing:.06em;color:var(--mute)}
 /* ── 作品页：Deckshift 式重叠牌堆 ──
    静止：七张卡横向叠放、各自带一点固定倾斜，像一副没理齐的牌；
@@ -365,7 +370,7 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
 .deck{
   /* 卡片高度 = min(视口宽驱动, 视口高驱动)：窗口拉矮时整叠牌等比缩小，
      不会顶出屏幕；宽度换算保持原值（24.75vw = 原 16.5vw × 1.5） */
-  --cardH:clamp(230px,min(24.75vw,47svh),387px);
+  --cardH:clamp(230px,min(24.75vw,47svh),420px);
   --cw:calc(var(--cardH) * 2 / 3);                 /* 卡片宽（2:3 与素材同比例） */
   --ov:clamp(58px,calc(var(--cw) * .42),108px);    /* 相邻重叠 ≈0.42 卡宽 */
   --push:clamp(16px,calc(var(--cw) * .133),42px);  /* 每推开一格的位移 */

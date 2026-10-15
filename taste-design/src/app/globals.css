@@ -427,7 +427,7 @@
 .deck {
   /* 卡片高度 = min(视口宽驱动, 视口高驱动)：窗口拉矮时整叠牌等比缩小，
      不会顶出屏幕；宽度换算保持原值（24.75vw = 原 16.5vw × 1.5） */
-  --cardH: clamp(230px, min(24.75vw, 47svh), 387px);
+  --cardH: clamp(230px, min(24.75vw, 47svh), 420px);
   --cw: calc(var(--cardH) * 2 / 3); /* 卡片宽（2:3 与素材同比例） */
   --ov: clamp(58px, calc(var(--cw) * 0.42), 108px); /* 相邻重叠 ≈0.42 卡宽 */
   --push: clamp(16px, calc(var(--cw) * 0.133), 42px); /* 每推开一格的位移 */
