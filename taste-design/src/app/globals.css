@@ -1129,12 +1129,17 @@
 
    三栏各自垂直居中 —— 用 margin-block:auto 而不是 justify-content:center，
    否则内容比容器高时会被裁掉顶部（flex 居中的经典坑）。
+
+   ── 整体版心（.wd-in）与第 3 屏的 .wrap、导航的 .nav-in 同构：同 max-width、
+   同 padding，所以左栏左缘和 logo 落在同一条竖线上、右栏不会越过版心 ──
    ═══════════════════════════════════════════════════════════════════ */
 
 :root {
   /* 固定导航的实际高度：py-4(16×2) + logo 48 = 80，≥640px 的 sm:py-6 是 96。
      二级页是 100svh 满屏布局，必须让出这一截，否则三栏顶到导航底下 */
   --navh: 5rem;
+  /* 二级菜单展开 / 收起的时长与缓动（只此一处，展开与收起共用） */
+  --wd-acc: 0.42s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 @media (min-width: 640px) {
   :root {
@@ -1148,6 +1153,21 @@
   height: 100svh;
   padding-top: var(--navh);
   overflow: hidden;
+}
+
+/* 版心：三栏全在它之内。与第 3 屏的 .wrap / 导航的 .nav-in 同构
+   （同 max-width + 同 padding），左栏左缘才会和 logo 落在同一条竖线上。
+   横向留白只在这里给一次，子级不要再各加一遍。 */
+.wd-in {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  max-width: var(--maxw);
+  margin-inline: auto;
+  padding-inline: var(--pad);
+  display: flex;
+  align-items: stretch;
 }
 
 /* ⚠ scroll-behavior:auto 是必须的，不是可选优化：html 上那条
@@ -1169,7 +1189,6 @@
 .wd-nav {
   flex: none;
   width: clamp(230px, 28.7vw, 410px);
-  margin-left: var(--pad);
   padding-block: 2.25rem;
   overflow-y: auto;
   scrollbar-width: none;
@@ -1233,10 +1252,51 @@
   color: rgba(255, 255, 255, 0.7);
 }
 
-/* 二级：内联手风琴。缩进 21px 对齐参考图（一级 81px → 二级 102px @1920） */
+/* 二级：内联手风琴。缩进 21px 对齐参考图（一级 81px → 二级 102px @1920）。
+   展开 / 收起用 grid-template-rows 0fr↔1fr 做 —— 这是唯一「不用预先知道内容
+   高度」又能真过渡的写法（max-height 要猜数字，height 要每帧量）。
+   收起时顺手把 visibility 关掉：面板虽然被压成 0 高，但里面那些按钮仍然
+   落在 Tab 顺序里，键盘用户会跳进一片看不见的东西。
+   窄屏整条不出现（改用下面那行横向 chips）。 */
 .wd-l2 {
   padding-left: 21px;
-  margin-top: 0.15rem;
+}
+
+@media (min-width: 1024px) {
+  .wd-l1li {
+    display: grid;
+    grid-template-rows: auto 0fr;
+    transition: grid-template-rows var(--wd-acc);
+  }
+  .wd-l1li.is-open {
+    grid-template-rows: auto 1fr;
+  }
+  .wd-l2 {
+    grid-row: 2;
+    min-height: 0;
+    overflow: hidden;
+    margin-top: 0;
+    visibility: hidden;
+    transition:
+      margin-top var(--wd-acc),
+      visibility 0s linear 0.42s;
+  }
+  .wd-l1li.is-open > .wd-l2 {
+    visibility: visible;
+    margin-top: 0.15rem;
+    transition:
+      margin-top var(--wd-acc),
+      visibility 0s linear 0s;
+  }
+}
+
+/* 减弱动态效果时直接切换 —— 上面那条 visibility 的 0.42s 延迟不在全局
+   `transition-duration` 覆写范围内，会留下「已收起但仍可 Tab」的窗口 */
+@media (prefers-reduced-motion: reduce) {
+  .wd-l1li,
+  .wd-l2 {
+    transition: none !important;
+  }
 }
 .wd-l2b {
   display: block;
@@ -1336,12 +1396,6 @@
   font-weight: 560;
   color: var(--color-ink);
 }
-.wd-cap-p {
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.16em;
-  color: var(--color-mute);
-}
 .wd-img {
   display: block;
   width: 100%;
@@ -1355,14 +1409,19 @@
 }
 
 @media (max-width: 1023.98px) {
-  /* ── 窄屏：三栏改成三行横向 chips（可侧滑），图片流吃掉剩下的高度 ── */
-  .wdetail {
+  /* ── 窄屏：三栏改成三行横向 chips（可侧滑），图片流吃掉剩下的高度 ──
+     版心的左右内边距由 .wd-in 统一给，下面各栏不要再各加一遍 */
+  .wd-in {
     flex-direction: column;
+  }
+  /* 窄屏没有内联手风琴，二级改用下面那行横向 chips
+     （用 .wd-l1li > .wd-l2 提高权重，别指望源顺序去压 .wd-l2row） */
+  .wd-l1li > .wd-l2 {
+    display: none;
   }
   .wd-nav {
     width: auto;
-    margin-left: 0;
-    padding: 0.4rem var(--pad) 0;
+    padding: 0.4rem 0 0;
     overflow: visible;
     flex: none;
   }
@@ -1417,7 +1476,7 @@
   .wd-list {
     width: auto;
     margin-left: 0;
-    padding: 0.35rem var(--pad) 0;
+    padding: 0.35rem 0 0;
     overflow: visible;
     flex: none;
     display: block;
@@ -1445,9 +1504,6 @@
   }
   .wd-l3b.is-on {
     border-bottom-color: rgba(255, 255, 255, 0.5);
-  }
-  .wd-feed {
-    padding: 0 var(--pad);
   }
   .wd-feed-in {
     max-width: none;

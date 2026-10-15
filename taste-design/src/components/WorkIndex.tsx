@@ -206,21 +206,38 @@ export function WorkIndex({ slug }: { slug: string }) {
   }, []);
 
   /**
+   * 手风琴展开要 0.42s（--wd-acc）。上面那次归位量到的还是「没展开」的几何，
+   * 新展开的二级会整段落在面板外 —— 动画走完再归位一次。
+   */
+  useEffect(() => {
+    const t = window.setTimeout(() => setTick((x) => x + 1), 470);
+    return () => window.clearTimeout(t);
+  }, [sec]);
+
+  /**
    * 把当前项带进视野。
    * 窄屏三行 chips 都是横向滚动的，激活项经常在屏幕外（比如从 works/other 进页，
    * 一级行里 Other 在最右），不归位就等于「进来就看不见自己在哪」。
-   * 桌面只在面板比视口高时才兜一下（7 个一级 + 最多 8 个二级，矮屏会超）。
+   * 桌面要看的是「整块」：一级项 + 它展开出来的二级 —— 只盯按钮的话，
+   * 二级展开后整段会落在面板底下还是看不见。
    * ⚠ 依赖 .wd-* 上的 scroll-behavior:auto，否则 += 是异步的、读了等于没读。
    */
   useIsoLayoutEffect(() => {
-    const on = l1Ref.current?.querySelector<HTMLElement>(".wd-l1li.is-on .wd-l1b");
+    const onLi = l1Ref.current?.querySelector<HTMLElement>(".wd-l1li.is-on");
+    const on = onLi?.querySelector<HTMLElement>(".wd-l1b") ?? null;
     const nav = navRef.current;
     if (!narrow) {
-      if (nav && on) {
+      /* 桌面要看的是「整块」：一级项 + 它展开出来的二级 —— 只盯按钮的话，
+         二级展开后整段会落在面板底下还是看不见。
+         ⚠ 整块比面板还高时只对齐顶部 —— 否则「对下沿」把顶部顶出去、
+         下一帧又「对上沿」，两帧来回拉成抖动。 */
+      if (nav && onLi) {
         const nb = nav.getBoundingClientRect();
-        const ob = on.getBoundingClientRect();
-        if (ob.top < nb.top + 8) nav.scrollTop += ob.top - nb.top - 8;
-        else if (ob.bottom > nb.bottom - 8) nav.scrollTop += ob.bottom - nb.bottom + 8;
+        const ob = onLi.getBoundingClientRect();
+        const pd = 8;
+        if (ob.height > nb.height - pd * 2 || ob.top < nb.top + pd)
+          nav.scrollTop += ob.top - nb.top - pd;
+        else if (ob.bottom > nb.bottom - pd) nav.scrollTop += ob.bottom - nb.bottom + pd;
       }
       return;
     }
@@ -257,9 +274,9 @@ export function WorkIndex({ slug }: { slug: string }) {
             workRefs.current[i] = el;
           }}
         >
+          {/* 只留标题：原作品集页码（P7-P9 之类）是内部标记，不上页面 */}
           <p className="wd-cap">
             <span className="wd-cap-t">{w.title}</span>
-            <span className="wd-cap-p">{w.pages}</span>
           </p>
           {w.imgs.map((im, k) => (
             // eslint-disable-next-line @next/next/no-img-element
@@ -282,96 +299,107 @@ export function WorkIndex({ slug }: { slug: string }) {
 
   return (
     <div className="wdetail">
-      {/* ── 一级 + 二级 ── */}
-      <div className="wd-nav" ref={navRef}>
-        <div className="wd-nav-in">
-          <ol className="wd-l1" ref={l1Ref}>
-            {SECTIONS.map((s, si) => {
-              const on = si === sec;
-              const showKids = !narrow && on && s.groups[0] !== null;
-              return (
-                <li key={s.slug} className={cn("wd-l1li", on && "is-on")}>
+      {/* 版心：与导航 / 第 3 屏同一套 max-width + padding，三栏全在它之内 */}
+      <div className="wd-in">
+        {/* ── 一级 + 二级 ── */}
+        <div className="wd-nav" ref={navRef}>
+          <div className="wd-nav-in">
+            <ol className="wd-l1" ref={l1Ref}>
+              {SECTIONS.map((s, si) => {
+                const on = si === sec;
+                /* 有二级的一级**永远**把二级挂在 DOM 里，展开/收起只切 .is-open：
+                   条件渲染的话元素是「新出现」的，grid-template-rows 的过渡根本
+                   不会播。窄屏由 CSS 整条 display:none，改用下面那行横向 chips。 */
+                const kids = s.groups[0] !== null;
+                return (
+                  <li
+                    key={s.slug}
+                    className={cn("wd-l1li", on && "is-on", on && kids && "is-open")}
+                  >
+                    <button
+                      type="button"
+                      className="wd-l1b"
+                      aria-current={on ? "true" : undefined}
+                      aria-expanded={kids ? on : undefined}
+                      aria-controls={kids ? `wd-l2-${s.slug}` : undefined}
+                      onClick={() => jump(s.works[0])}
+                    >
+                      <span className="wd-en">{s.en}</span>
+                      <span className="wd-cn">{s.cn}</span>
+                    </button>
+
+                    {kids && (
+                      <ol className="wd-l2" id={`wd-l2-${s.slug}`}>
+                        {s.groups.map((g, gi) => (
+                          <li key={g}>
+                            <button
+                              type="button"
+                              className={cn("wd-l2b", gi === grp && "is-on")}
+                              aria-current={gi === grp ? "true" : undefined}
+                              onClick={() => jump(s.works.find((w) => WORKS[w].grp === gi)!)}
+                            >
+                              {g}
+                            </button>
+                          </li>
+                        ))}
+                      </ol>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+
+            {narrow && l2.length > 0 && (
+              <ol className="wd-l2 wd-l2row" ref={l2RowRef}>
+                {l2.map((g, gi) => (
+                  <li key={g}>
+                    <button
+                      type="button"
+                      className={cn("wd-l2b", gi === grp && "is-on")}
+                      aria-current={gi === grp ? "true" : undefined}
+                      onClick={() => jump(section.works.find((w) => WORKS[w].grp === gi)!)}
+                    >
+                      {g}
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+        </div>
+
+        {/* ── 三级 ── */}
+        {l3.length > 0 && (
+          <nav className="wd-list" aria-label="作品">
+            <ol className="wd-l3" ref={l3Ref}>
+              {l3.map((i) => (
+                <li key={WORKS[i].id}>
                   <button
                     type="button"
-                    className="wd-l1b"
-                    aria-current={on ? "true" : undefined}
-                    onClick={() => jump(s.works[0])}
+                    className={cn("wd-l3b", i === workIdx && "is-on")}
+                    aria-current={i === workIdx ? "true" : undefined}
+                    onClick={() => jump(i)}
                   >
-                    <span className="wd-en">{s.en}</span>
-                    <span className="wd-cn">{s.cn}</span>
-                  </button>
-
-                  {showKids && (
-                    <ol className="wd-l2">
-                      {s.groups.map((g, gi) => (
-                        <li key={g}>
-                          <button
-                            type="button"
-                            className={cn("wd-l2b", gi === grp && "is-on")}
-                            aria-current={gi === grp ? "true" : undefined}
-                            onClick={() => jump(s.works.find((w) => WORKS[w].grp === gi)!)}
-                          >
-                            {g}
-                          </button>
-                        </li>
-                      ))}
-                    </ol>
-                  )}
-                </li>
-              );
-            })}
-          </ol>
-
-          {narrow && l2.length > 0 && (
-            <ol className="wd-l2 wd-l2row" ref={l2RowRef}>
-              {l2.map((g, gi) => (
-                <li key={g}>
-                  <button
-                    type="button"
-                    className={cn("wd-l2b", gi === grp && "is-on")}
-                    aria-current={gi === grp ? "true" : undefined}
-                    onClick={() => jump(section.works.find((w) => WORKS[w].grp === gi)!)}
-                  >
-                    {g}
+                    {WORKS[i].title}
                   </button>
                 </li>
               ))}
             </ol>
-          )}
+          </nav>
+        )}
+
+        {/* ── 图片流：全部作品首尾相接，滚到底就是下一个作品 ── */}
+        <div
+          className="wd-feed"
+          ref={feedRef}
+          onScroll={onScroll}
+          role="region"
+          aria-label="作品图片"
+          /* 可滚动区域要能键盘聚焦，否则键盘用户滚不动它 */
+          tabIndex={0}
+        >
+          <div className="wd-feed-in">{feed}</div>
         </div>
-      </div>
-
-      {/* ── 三级 ── */}
-      {l3.length > 0 && (
-        <nav className="wd-list" aria-label="作品">
-          <ol className="wd-l3" ref={l3Ref}>
-            {l3.map((i) => (
-              <li key={WORKS[i].id}>
-                <button
-                  type="button"
-                  className={cn("wd-l3b", i === workIdx && "is-on")}
-                  aria-current={i === workIdx ? "true" : undefined}
-                  onClick={() => jump(i)}
-                >
-                  {WORKS[i].title}
-                </button>
-              </li>
-            ))}
-          </ol>
-        </nav>
-      )}
-
-      {/* ── 图片流：全部作品首尾相接，滚到底就是下一个作品 ── */}
-      <div
-        className="wd-feed"
-        ref={feedRef}
-        onScroll={onScroll}
-        role="region"
-        aria-label="作品图片"
-        /* 可滚动区域要能键盘聚焦，否则键盘用户滚不动它 */
-        tabIndex={0}
-      >
-        <div className="wd-feed-in">{feed}</div>
       </div>
     </div>
   );

@@ -19,7 +19,11 @@ export type Work = {
   /** 该一级的 groups 下标 */
   grp: number;
   title: string;
-  /** 原作品集页码，如 P15-P18 */
+  /**
+   * 原作品集页码，如 P15-P18。
+   * ⚠ 只是「对回原作品集」的内部标记，页面上**不渲染**（曾经显示成 P7-P9，
+   *   用户要求去掉），留着是为了改素材时能一眼找到出处。
+   */
   pages: string;
   imgs: WorkImage[];
 };
