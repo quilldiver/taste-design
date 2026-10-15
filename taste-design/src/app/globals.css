@@ -1140,6 +1140,18 @@
   --navh: 5rem;
   /* 二级菜单展开 / 收起的时长与缓动（只此一处，展开与收起共用） */
   --wd-acc: 0.42s cubic-bezier(0.22, 0.61, 0.36, 1);
+  /* 选中项放大 1.25 倍的时长与缓动（一级与三级共用）。
+     比 --wd-acc 略快一点点：它是「点下去立刻要看到的反馈」，
+     而手风琴是布局变化，慢一点才不晕。 */
+  --wd-pop: 0.4s cubic-bezier(0.22, 0.61, 0.36, 1);
+  /* 左侧两栏的「**内容**宽」（不含放大余量）。这两个是真源：
+     余量、盒宽、栏间距都由它们派生，要调宽度只改这里。
+     ⚠ 一级栏不要改回 vw 弹性值 —— 它是「英文大字 + 中文小字」同一行、
+     两端 white-space:nowrap，列一宽字号也涨，最容易撑破。 */
+  --wd-c1: 220px;
+  --wd-c3: clamp(176px, 15.6vw, 252px);
+  /* 一级栏**内容右缘** → 三级栏**内容左缘**的净距（参考图里左两栏是相邻的） */
+  --wd-gap: 80px;
 }
 @media (min-width: 640px) {
   :root {
@@ -1188,11 +1200,21 @@
 /* ── 左：一级 + 二级 ── */
 .wd-nav {
   flex: none;
-  /* 固定 220px（曾经是 clamp(230px, 28.7vw, 410px)）。不要再改回 vw 弹性值：
-     一级是「英文大字 + 中文小字」同一行、两端都 white-space:nowrap，
-     列一宽字体就跟着 clamp 涨上去。实测 27.2px 字号下最宽的是 Typsetting
-     （196px）与 Packaging（192px），220 里各余 24 / 28px。 */
-  width: 220px;
+  /* 内容宽 = --wd-c1（220px）。实测 27.2px 字号下最宽的一条是
+     Typsetting 排版设计 = 198px，所以剩 22px 余量。
+
+     ⚠ 盒子 275px ≠ 内容 275px：右侧 55px 的 padding-right 是**给放大用的余量**
+     （= 内容宽 × .25，见下）。为什么非得用 padding 而不是 overflow-clip-margin：
+     选中项要 scale(1.25)，而 .wd-l1b 是 width:100%（220px），缩放后整个按钮框
+     变成 275px；.wd-nav 又是纵向滚动容器 —— `overflow-y:auto` 会把 `overflow-x`
+     强制算成 `auto`（写 visible 也无效），超出内容盒的部分要么被裁、要么变成
+     横向可滚。实测 `overflow-clip-margin` 对 `overflow-x:hidden` 也不生效
+     （Chrome 直接把两条都裁掉）。但**裁剪边界是 padding box**，所以把余量留在
+     自己的 padding 里，放大后的字就画得出来、也不会产生横向滚动。
+     配套：.wd-list 的 margin-left 同步扣掉这 55px（见下），所以一级栏内容右缘、
+     三级栏与图片流的内容位置一个像素都不动。 */
+  width: calc(var(--wd-c1) * 1.25);
+  padding-right: calc(var(--wd-c1) * 0.25);
   padding-block: 2.25rem;
   overflow-y: auto;
   scrollbar-width: none;
@@ -1227,7 +1249,10 @@
   text-align: left;
   color: var(--color-mute);
   cursor: pointer;
-  transition: color 0.25s ease;
+  transform-origin: left center;
+  transition:
+    color 0.25s ease,
+    transform var(--wd-pop);
 }
 .wd-l1b:hover {
   color: var(--color-ink);
@@ -1242,12 +1267,17 @@
   white-space: nowrap;
 }
 .wd-cn {
-  font-size: clamp(0.72rem, 0.92vw, 0.84rem);
+  font-size: 14px;
   white-space: nowrap;
   transition: color 0.25s ease;
 }
+/* 选中的一级放大 1.25 倍。transform-origin:left center 让它从左边长出去，
+   文字左缘（= 与 logo 对齐的那条竖线）纹丝不动，只往右、往上下各长一点。
+   ⚠ 缩放只写在按钮上、不写在 .wd-l1li 上：li 里还包括展开出来的二级面板，
+   一起缩放的话整块面板会跟着变形。 */
 .wd-l1li.is-on .wd-l1b {
   color: var(--color-ink);
+  transform: scale(1.25);
 }
 .wd-l1li.is-on .wd-en {
   font-weight: 650;
@@ -1267,6 +1297,15 @@
 }
 
 @media (min-width: 1024px) {
+  /* 一级各项之间再 +8px。原来相邻两项的净距只来自按钮自己的 padding
+     （0.3rem 下 + 0.3rem 上 ≈ 9.6px），加上这 8px 后 ≈ 17.6px。
+     用 gap 而不是给 li 加 margin：gap 只作用在**项与项之间**，
+     首项上方、末项下方不会多出半截空隙（也就不会让整块看起来下移）。 */
+  .wd-l1 {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
   .wd-l1li {
     display: grid;
     grid-template-rows: auto 0fr;
@@ -1309,7 +1348,7 @@
   background: none;
   border: 0;
   text-align: left;
-  font-size: 0.84rem;
+  font-size: 16px;
   line-height: 1.4;
   color: var(--color-mute);
   cursor: pointer;
@@ -1324,17 +1363,26 @@
 }
 
 /* ── 中：三级 ──
-   margin-left 是「一级/二级栏」与「三级栏」之间那条空白。
-   曾经是 clamp(28px, 13.6vw, 220px)（1920 下 220）——参考图里左两栏是相邻的，
-   220px 那条缝白占了图片流的位置，改成固定 80px。
-   ⚠ 省下来的宽度会自动落到 .wd-feed（三栏里只有它 flex: 1 1 auto），
-   所以「多余空间给图片」不需要另外写规则；但别再往 .wd-list 上加 width，
-   那会把图片列的宽度吃掉，与本次调宽的意图相反。
-   ≥1024 恒 80px；<1024 三级栏变成横向 chips 行，margin-left 归 0（见媒体查询）。 */
+   内容宽 = --wd-c3，与一级栏之间的净距 = --wd-gap（80px，参考图里左两栏是相邻的）。
+   曾经 margin-left 是 clamp(28px, 13.6vw, 220px)（1920 下 220）——220px 那条缝
+   白占了图片流的位置，改成 80px。
+   ⚠ 与 .wd-nav 同一套做法：右侧 padding-right = 内容宽 × .25 是**放大余量**
+   （选中项 scale(1.25)，`.wd-l3b{width:100%}` 整条也跟着长 25%），
+   理由见 .wd-nav 的注释 —— 纵向滚动容器必然裁掉横向溢出，裁剪边界是 padding box。
+   这里余量只能加在右边：三级是左对齐的，若把余量放左边、让字往左长，
+   选中项的左缘就会和别的标题错开，整列立刻看着不齐。
+   ⚠ margin-left 要扣掉一级栏那份余量，否则三级栏会被整体推右
+   （一级栏的盒子宽了 55px，但它多出来的只是 padding）。
+   ⚠ 余量是固定比例而不是固定像素：窄一点的视口里内容盒只有 176px，
+     但字号仍是 16px、长标题会**折行**（桌面态没有 nowrap），折行后最长一行
+     ≤ 内容盒，所以 25% 的余量照样够。
+   ⚠ 省下来的宽度会自动落到 .wd-feed（三栏里只有它 flex: 1 1 auto）；
+   不要再往 .wd-list 上加 width，那会把图片列的宽度吃掉。 */
 .wd-list {
   flex: none;
-  width: clamp(176px, 15.6vw, 252px);
-  margin-left: 80px;
+  width: calc(var(--wd-c3) * 1.25);
+  padding-right: calc(var(--wd-c3) * 0.25);
+  margin-left: calc(var(--wd-gap) - var(--wd-c1) * 0.25);
   padding-block: 2.25rem;
   overflow-y: auto;
   scrollbar-width: none;
@@ -1355,18 +1403,24 @@
   background: none;
   border: 0;
   text-align: left;
-  font-size: 0.84rem;
+  font-size: 16px;
   line-height: 1.45;
   color: var(--color-mute);
   cursor: pointer;
-  transition: color 0.25s ease;
+  transform-origin: left center;
+  transition:
+    color 0.25s ease,
+    transform var(--wd-pop);
 }
 .wd-l3b:hover {
   color: var(--color-ink);
 }
+/* 三级选中项同样放大 1.25 倍（与一级同一套时长 / 缓动 / 原点，
+   只是溢出的余量留在 .wd-list 的 padding-right 里）。 */
 .wd-l3b.is-on {
   color: var(--color-ink);
   font-weight: 620;
+  transform: scale(1.25);
 }
 
 /* ── 右：图片流 ── */
@@ -1439,10 +1493,12 @@
   .wd-nav-in {
     margin: 0;
   }
+  /* 同样是「间隔 +8px」：桌面用 flex gap，窄屏这行本来就是 flex，
+     只把 gap 从 1.05rem 提到 1.55rem（+8px）。顺带给选中项的放大留出余量。 */
   .wd-l1 {
     display: flex;
     align-items: baseline;
-    gap: 1.05rem;
+    gap: 1.55rem;
     overflow-x: auto;
     scrollbar-width: none;
     padding-bottom: 0.3rem;
@@ -1453,17 +1509,21 @@
   .wd-l1li {
     flex: none;
   }
+  /* 窄屏是横向 chip 行 —— 缩放的**原点必须改成 center**：
+     桌面用 left 是因为竖排、左缘对齐；这里用 left 会让放大后的字整块向右
+     压到下一个 chip 上。center 则左右各长一半，行距够就不打架。 */
   .wd-l1b {
     width: auto;
     gap: 0.4rem;
     padding: 0.1rem 0;
     white-space: nowrap;
+    transform-origin: center center;
+  }
+  .wd-l1li.is-on .wd-l1b {
+    transform: scale(1.2);
   }
   .wd-en {
     font-size: 1.05rem;
-  }
-  .wd-cn {
-    font-size: 0.7rem;
   }
   .wd-l2row {
     display: flex;
@@ -1492,9 +1552,11 @@
     flex: none;
     display: block;
   }
+  /* 行距同时放大一点（0.95 → 1.35rem）：三级标题最长 235px，缩放到 1.15
+     后左右各长 ~18px，原来的 15.2px 行距会被邻项压住。 */
   .wd-l3 {
     display: flex;
-    gap: 0.95rem;
+    gap: 1.35rem;
     margin: 0;
     overflow-x: auto;
     scrollbar-width: none;
@@ -1512,9 +1574,13 @@
     white-space: nowrap;
     border-bottom: 1px solid transparent;
     padding-bottom: 0.2rem;
+    transform-origin: center center;
   }
+  /* 窄屏的三级标题比一级长得多（「市南区 “文明养犬” 主题实践活动」235px），
+     同样是 1.25 的话左右各长 30px、行距放不下，所以窄屏收一档到 1.15。 */
   .wd-l3b.is-on {
     border-bottom-color: rgba(255, 255, 255, 0.5);
+    transform: scale(1.15);
   }
   .wd-feed-in {
     max-width: none;
