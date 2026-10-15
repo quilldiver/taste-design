@@ -1323,11 +1323,18 @@
   font-weight: 620;
 }
 
-/* ── 中：三级 ── */
+/* ── 中：三级 ──
+   margin-left 是「一级/二级栏」与「三级栏」之间那条空白。
+   曾经是 clamp(28px, 13.6vw, 220px)（1920 下 220）——参考图里左两栏是相邻的，
+   220px 那条缝白占了图片流的位置，改成固定 80px。
+   ⚠ 省下来的宽度会自动落到 .wd-feed（三栏里只有它 flex: 1 1 auto），
+   所以「多余空间给图片」不需要另外写规则；但别再往 .wd-list 上加 width，
+   那会把图片列的宽度吃掉，与本次调宽的意图相反。
+   ≥1024 恒 80px；<1024 三级栏变成横向 chips 行，margin-left 归 0（见媒体查询）。 */
 .wd-list {
   flex: none;
   width: clamp(176px, 15.6vw, 252px);
-  margin-left: clamp(28px, 13.6vw, 220px);
+  margin-left: 80px;
   padding-block: 2.25rem;
   overflow-y: auto;
   scrollbar-width: none;
