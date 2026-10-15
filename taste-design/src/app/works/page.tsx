@@ -19,10 +19,6 @@ export default function WorksPage() {
           </span>
         </h1>
 
-        <p className="mt-6 max-w-[34rem] text-[1.0625rem] leading-[1.75] text-mute">
-          七个方向的出品记录。把光标放到任意一张上，整叠牌会为它让出位置。
-        </p>
-
         <WorksBrowser />
       </div>
     </section>

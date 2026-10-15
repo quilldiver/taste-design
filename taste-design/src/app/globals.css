@@ -426,8 +426,10 @@
    ───────────────────────────────────────────── */
 .deck {
   --cw: clamp(178px, 16.5vw, 258px); /* 卡片宽 */
-  --ov: clamp(96px, 8.6vw, 138px); /* 相邻重叠量 ≈ 0.53 卡宽 */
-  --push: clamp(30px, 4.4vw, 80px); /* 每推开一格的位移（步长递减见 shiftOf） */
+  /* 相邻重叠量 ≈ 0.42 卡宽（原 0.53 太挤）；推开距离同步收窄，
+     否则静止态一分散，展开后就顶出版心（1024 版心只有 960，余量最紧） */
+  --ov: clamp(75px, 6.9vw, 108px);
+  --push: clamp(20px, 2.2vw, 42px);
   display: flex;
   justify-content: center;
   align-items: stretch;
@@ -531,13 +533,18 @@
   transition: background 0.38s ease;
 }
 
+/* 编号在上、文案贴底：去掉中部图标后只剩两行，第二行 align-self:end 顶到底部 */
 .deck-face {
   position: relative;
   z-index: 3;
   height: 100%;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto 1fr;
   padding: 1.05rem 1.1rem 1.2rem;
+}
+
+.deck-face > div {
+  align-self: end;
 }
 
 .deck-idx {
@@ -555,27 +562,6 @@
   height: 4px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.35);
-}
-
-.deck-icon {
-  align-self: center;
-  justify-self: start;
-  width: clamp(46px, 3.6vw, 58px);
-  color: rgba(255, 255, 255, 0.72);
-  transition:
-    color 0.38s ease,
-    transform 0.58s cubic-bezier(0.19, 1.26, 0.28, 1);
-}
-
-.deck-card.is-active .deck-icon {
-  color: var(--color-ink);
-  transform: scale(1.06);
-}
-
-.deck-icon svg {
-  display: block;
-  width: 100%;
-  height: auto;
 }
 
 .deck-title {
@@ -665,7 +651,7 @@
     );
   }
 
-  /* 横幅：图标在左、文案在右，编号挪到右上角 */
+  /* 横幅：文案横向排布，编号挪到右上角 */
   .deck-face {
     position: relative;
     display: flex;
@@ -675,21 +661,14 @@
     padding: 1.05rem 1.15rem;
   }
 
+  .deck-face > div {
+    align-self: auto;
+  }
+
   .deck-idx {
     position: absolute;
     top: 0.9rem;
     right: 1.15rem;
-  }
-
-  .deck-icon {
-    flex: 0 0 auto;
-    width: 44px;
-    align-self: auto;
-    justify-self: auto;
-  }
-
-  .deck-card.is-active .deck-icon {
-    transform: none;
   }
 
   .deck-note {

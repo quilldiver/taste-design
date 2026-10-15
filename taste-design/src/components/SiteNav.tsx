@@ -56,7 +56,8 @@ export default function SiteNav() {
       data-shade={shade}
       className="site-nav fixed inset-x-0 top-0 z-50"
     >
-      <div className="mx-auto flex max-w-[1680px] items-center justify-between px-5 py-4 sm:px-8 sm:py-6">
+      {/* 左右不留边：品牌与菜单顶到视口两侧 */}
+      <div className="mx-auto flex max-w-[1680px] items-center justify-between px-0 py-4 sm:px-0 sm:py-6">
         <Link
           href="/"
           className="group flex items-center gap-[0.65rem] no-underline"

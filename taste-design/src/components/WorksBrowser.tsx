@@ -31,58 +31,6 @@ const IMG: Record<string, string> = {
   misc: "card_other_1x.webp",
 };
 
-/** 统一规格：64×64、线稿、1.6 描边，随卡面文字色变化 */
-const ICONS: Record<string, ReactNode> = {
-  logo: (
-    <>
-      <circle cx="32" cy="32" r="21" />
-      <path d="M25 43V24h11a6 6 0 0 1 0 12h-11" />
-    </>
-  ),
-  brand: (
-    <>
-      <rect x="9" y="13" width="31" height="31" rx="5" />
-      <rect x="24" y="20" width="31" height="31" rx="5" />
-    </>
-  ),
-  event: (
-    <>
-      <circle cx="32" cy="32" r="7" />
-      <path d="M32 6v11M32 47v11M6 32h11M47 32h11" />
-      <path d="M14 14l8 8M42 42l8 8M50 14l-8 8M22 42l-8 8" />
-    </>
-  ),
-  pack: (
-    <>
-      <path d="M32 8l22 12-22 12L10 20 32 8z" />
-      <path d="M10 20v22l22 13V33" />
-      <path d="M32 33l22 12V22" />
-    </>
-  ),
-  type: (
-    <>
-      <path d="M14 46l12-30 12 30M19 33h14" />
-      <path d="M42 14h16M42 25h16M42 36h16M42 47h10" />
-    </>
-  ),
-  ip: (
-    <>
-      <circle cx="32" cy="35" r="18" />
-      <circle cx="25" cy="31" r="1.7" />
-      <circle cx="39" cy="31" r="1.7" />
-      <path d="M25 40c2 3 4 4.4 7 4.4S37 43 39 40" />
-      <path d="M20 18l-4-7M44 18l4-7" />
-    </>
-  ),
-  misc: (
-    <>
-      {[14, 32, 50].map((y) =>
-        [14, 32, 50].map((x) => <circle key={`${x}-${y}`} cx={x} cy={y} r="3.2" />)
-      )}
-    </>
-  ),
-};
-
 export function WorksBrowser() {
   const [active, setActive] = useState<number | null>(null);
 
@@ -134,12 +82,6 @@ export function WorksBrowser() {
                   {d.index}
                   <span className="deck-dot" aria-hidden="true" />
                 </p>
-
-                <span className="deck-icon" aria-hidden="true">
-                  <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.6">
-                    {ICONS[d.kind]}
-                  </svg>
-                </span>
 
                 <div>
                   <h2 className="deck-title">{d.cn}</h2>

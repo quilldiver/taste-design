@@ -83,7 +83,7 @@ body{
   opacity:0;transition:opacity .45s ease;
   background:linear-gradient(to bottom,#000 0%,rgba(0,0,0,0) 100%)}
 .nav.shade::before{opacity:1}
-.nav-in{max-width:var(--maxw);margin:0 auto;padding:1rem var(--pad);
+.nav-in{max-width:var(--maxw);margin:0 auto;padding:1rem 0;   /* 左右不留边：品牌与菜单顶到视口两侧 */
   display:flex;align-items:center;justify-content:space-between;gap:1rem}
 /* 品牌：logo 定死 48px；中文 18px / 90% 白，英文 12px / 50% 白 */
 .brand{display:flex;align-items:center;gap:.65rem;text-decoration:none;color:var(--ink)}
@@ -361,8 +361,10 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
    悬停 / 聚焦 / 点击某一张 ⇒ 它浮起当主角，两侧按距离被弹簧推开再小幅回弹；
    <1024px 还原成干净的单列列表。 */
 .deck{--cw:clamp(178px,16.5vw,258px);            /* 卡片宽 */
-  --ov:clamp(96px,8.6vw,138px);                  /* 相邻重叠量 ≈ 0.53 卡宽 */
-  --push:clamp(30px,4.4vw,80px);                 /* 每推开一格的位移（步长递减见 shiftOf） */
+  /* 相邻重叠量 ≈ 0.42 卡宽（原 0.53 太挤）；推开距离同步收窄，
+     否则静止态一分散，展开后就会顶出版心（1024 版心只有 960，余量最紧） */
+  --ov:clamp(75px,6.9vw,108px);
+  --push:clamp(20px,2.2vw,42px);
   display:flex;justify-content:center;align-items:stretch;
   padding-block:2.5rem 3rem;margin:0;list-style:none}
 .deck-cell{position:relative;min-width:0}
@@ -395,16 +397,13 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
 .deck-card.is-active::after{background:linear-gradient(180deg,rgba(3,8,21,.55) 0%,
   rgba(3,8,21,.2) 30%,rgba(3,8,21,.24) 55%,rgba(3,8,21,.9) 100%);
   transition:background .38s ease}
+/* 编号在上、文案贴底：去掉中部图标后只剩两行，第二行 align-self:end 顶到底部 */
 .deck-face{position:relative;z-index:3;height:100%;display:grid;
-  grid-template-rows:auto 1fr auto;padding:1.05rem 1.1rem 1.2rem}
+  grid-template-rows:auto 1fr;padding:1.05rem 1.1rem 1.2rem}
+.deck-face > div{align-self:end}
 .deck-idx{display:flex;align-items:center;gap:.55rem;margin:0;
   font-family:var(--f-mono);font-size:.68rem;letter-spacing:.2em;color:var(--mute)}
 .deck-dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.35)}
-.deck-icon{align-self:center;justify-self:start;width:clamp(46px,3.6vw,58px);
-  color:rgba(255,255,255,.72);
-  transition:color .38s ease,transform .58s cubic-bezier(.19,1.26,.28,1)}
-.deck-card.is-active .deck-icon{color:var(--ink);transform:scale(1.06)}
-.deck-icon svg{display:block;width:100%;height:auto}
 .deck-title{margin:0;font-family:var(--f-display);font-weight:620;font-stretch:97%;
   font-size:clamp(1.1rem,1.5vw,1.4rem);line-height:1.15;color:var(--ink)}
 .deck-en{margin-top:.3rem;font-family:var(--f-mono);font-size:.62rem;letter-spacing:.2em;color:var(--mute)}
@@ -424,11 +423,10 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
   .deck-card.is-active::before{opacity:0}
   .deck-card::after{background:linear-gradient(180deg,rgba(3,8,21,.72) 0%,
     rgba(3,8,21,.5) 45%,rgba(3,8,21,.9) 100%)}
-  /* 横幅：图标在左、文案在右，编号挪到右上角 */
+  /* 横幅：文案横向排布，编号挪到右上角 */
   .deck-face{display:flex;align-items:center;gap:1.1rem;height:auto;padding:1.05rem 1.15rem}
+  .deck-face > div{align-self:auto}
   .deck-idx{position:absolute;top:.9rem;right:1.15rem}
-  .deck-icon{flex:0 0 auto;width:44px;align-self:auto;justify-self:auto}
-  .deck-card.is-active .deck-icon{transform:none}
   .deck-note{opacity:1;max-height:none}
 }
 
@@ -542,10 +540,6 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
           <span>作品</span>
           <span class="sub">Works</span>
         </h1>
-        <p class="lede" style="margin:1.5rem 0 0;max-width:34rem;font-size:1.0625rem;line-height:1.75;color:var(--mute)">
-          七个方向的出品记录。把光标放到任意一张上，整叠牌会为它让出位置。
-        </p>
-
         <!-- 牌堆由 JS 生成（见脚本第 3 块） -->
         <ul class="deck" id="deck"></ul>
       </div>
@@ -880,16 +874,7 @@ void main(){
    3. 极简路由 + 作品页牌堆（Deckshift 式重叠牌堆）
    ═══════════════════════════════════════════ */
 (function(){
-  /* 七类出品记录。图标统一 64×64 线稿、1.6 描边，随卡面文字色变化 */
-  const ICONS={
-    logo:'<circle cx="32" cy="32" r="21"/><path d="M25 43V24h11a6 6 0 0 1 0 12h-11"/>',
-    brand:'<rect x="9" y="13" width="31" height="31" rx="5"/><rect x="24" y="20" width="31" height="31" rx="5"/>',
-    event:'<circle cx="32" cy="32" r="7"/><path d="M32 6v11M32 47v11M6 32h11M47 32h11"/><path d="M14 14l8 8M42 42l8 8M50 14l-8 8M22 42l-8 8"/>',
-    pack:'<path d="M32 8l22 12-22 12L10 20 32 8z"/><path d="M10 20v22l22 13V33"/><path d="M32 33l22 12V22"/>',
-    type:'<path d="M14 46l12-30 12 30M19 33h14"/><path d="M42 14h16M42 25h16M42 36h16M42 47h10"/>',
-    ip:'<circle cx="32" cy="35" r="18"/><circle cx="25" cy="31" r="1.7"/><circle cx="39" cy="31" r="1.7"/><path d="M25 40c2 3 4 4.4 7 4.4S37 43 39 40"/><path d="M20 18l-4-7M44 18l4-7"/>',
-    misc:[14,32,50].map(y=>[14,32,50].map(x=>`<circle cx="${x}" cy="${y}" r="3.2"/>`).join('')).join('')
-  };
+  /* 七类出品记录 */
   const DECKS=[
     {kind:'logo', idx:'001', cn:'标志设计', en:'LOGO',         note:'一个符号，撑住所有触点',       img:'card/card_logo_1x.webp'},
     {kind:'brand',idx:'002', cn:'品牌设计', en:'BRANDING',     note:'把调性与规矩写成能复用的系统', img:'card/card_brand_1x.webp'},
@@ -918,9 +903,6 @@ void main(){
           <img class="deck-img" src="${d.img}" alt="" loading="lazy" decoding="async" draggable="false">
           <div class="deck-face">
             <p class="deck-idx">${d.idx}<span class="deck-dot" aria-hidden="true"></span></p>
-            <span class="deck-icon" aria-hidden="true">
-              <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.6">${ICONS[d.kind]}</svg>
-            </span>
             <div>
               <h2 class="deck-title">${d.cn}</h2>
               <p class="deck-en">${d.en}</p>
