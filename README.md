@@ -61,6 +61,13 @@ taste-design/              Next.js 交付版（源码）
 - 图片流用 `<img width height>` 占位、`loading="lazy"`（仅首图 eager），避免未解码时偏移表算错。
 - **作品标题下不显示原作品集页码**（`P7-P9` 那类只在 `works.ts` 里留着当溯源标记）。
 - `<1024px` 三栏改三行横向 chips，激活项会自动带进视野。
+- **图片流上下边缘的渐进模糊**（Liquid Scroll 那一套，只在这一页）：浏览器没有「渐变 blur」，所以用 **6 层 `backdrop-filter` 叠出来** —— 每层 blur 固定（9 / 7 / 5.2 / 3.6 / 2.2 / 1 px），靠 `mask-image` 决定它从边缘起「能活多久」（最糊那层只覆盖最外 30%，最轻那层铺满全带）。带高 `--wd-lq-h: clamp(56px, 8vh, 100px)`。
+  > ⚠️ 每层 blur 必须**递减**：`backdrop-filter` 是串联的（后一层模糊的是前一层的输出），等强叠 6 层会把模糊度乘成 √6 倍，边缘糊成一块死色。
+  > ⚠️ 覆盖层必须放在**滚动容器外面**（`.wd-feed-wrap > .wd-feed` + `.wd-lq`），放里面会跟着内容滚走，用 `sticky` 又会占文档流。父级 `position:relative` + 子级 `absolute; inset:0` 精确盖住整块。`pointer-events:none` 保证不吃点击与滚轮。
+- **顶部另加一层黑色渐变，且只在「往下滚过」之后出现**（`.wd-feed-wrap.is-scrolled`，由滚动反推那一次 rAF 顺手切）。阈值取**第一个作品的 `offsetTop`** 而不是 0 —— 进页时图片流本身就带着 `offsetTop-10` 的偏移（logo 页是 10px），拿 0 判定会让首屏一进来就挂黑幕。
+  > **顶部整组随滚动淡入、底部常驻**：静止时图片流顶上就是第一个作品的标题，常驻会一进页就把它糊掉；滚过之后顶上确实压着内容，模糊才成立。底部相反 —— 内容永远延伸到视口下方。
+  > ⚠️ 淡入**不能写成 `.wd-lq-t { opacity: … }`**：`opacity < 1` 会把该元素变成 backdrop root，子孙的 `backdrop-filter` 就只采样它自己（空内容），模糊整体失效。所以让每个 `span` 自己 `transition: opacity`（实测 `opacity:.5` 时边缘能量 5.1，介于「全模糊 3.4」与「无模糊 11.0」之间，证明模糊仍在工作）。
+  > 性能：真实 GPU 下 12 层 backdrop-filter 对滚动帧率**无可测影响**（Apple M5 无头 Metal 后端，开 / 关都是稳定 60fps）。软件光栅（SwiftShader）下才会掉到 30fps —— 那是无头沙箱的假象，不代表真机。`opacity:0` 的层浏览器会跳过绘制，所以静止时更省。
 
 ## 四、本地开发
 

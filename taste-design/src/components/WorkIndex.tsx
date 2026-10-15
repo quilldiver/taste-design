@@ -47,6 +47,8 @@ export function WorkIndex({ slug }: { slug: string }) {
 
   const [workIdx, setWorkIdx] = useState(() => SECTIONS[startSec].works[0]);
   const [narrow, setNarrow] = useState(false);
+  /** 图片流顶上的黑渐变：往下滚过才出现（见 sync / .is-scrolled） */
+  const [scrolled, setScrolled] = useState(false);
   /** 只用来在「字体替换完 / 首帧排版完成」后再触发一次菜单归位 */
   const [tick, setTick] = useState(0);
 
@@ -99,6 +101,13 @@ export function WorkIndex({ slug }: { slug: string }) {
   const sync = useCallback(() => {
     const feed = feedRef.current;
     if (!feed) return;
+    /* 图片流顶上的黑渐变：**第一个作品被卷到视口之上后才出现**。
+       ⚠ 阈值必须用「第一个作品的 offsetTop」而不是 0：进页时图片流本身就会带上
+       `offsetTop-10` 的偏移（logo 页是 10px），拿 0 判定会让首屏一进来就挂着黑幕。
+       读的是缓存好的 offs 表、不读 offsetTop ⇒ 不会在滚动里强制重排。
+       相同值返回原引用 ⇒ React 直接 bailout，不会每帧重渲染。 */
+    const wantShade = feed.scrollTop > (offs.current[0]?.[0] ?? 0) + 2;
+    setScrolled((p) => (p === wantShade ? p : wantShade));
     const l = lock.current;
     if (l) {
       /* 锁到「确实滚到目标」为止，另加一个超时兜底（目标可能被 maxScroll 夹住） */
@@ -154,6 +163,8 @@ export function WorkIndex({ slug }: { slug: string }) {
     const feed = feedRef.current;
     const el = workRefs.current[i];
     if (feed && el) feed.scrollTop = Math.max(0, el.offsetTop - 10);
+    /* 赋值没真的改变 scrollTop 就不会派发 scroll 事件 ⇒ 黑渐变状态在这里补一刀 */
+    if (feed) setScrolled(feed.scrollTop > (offs.current[0]?.[0] ?? 0) + 2);
   }, [startSec, measure]);
 
   /* 宽度变化 ⇒ 图片高度全变 ⇒ 偏移表必须重算 */
@@ -388,17 +399,41 @@ export function WorkIndex({ slug }: { slug: string }) {
           </nav>
         )}
 
-        {/* ── 图片流：全部作品首尾相接，滚到底就是下一个作品 ── */}
-        <div
-          className="wd-feed"
-          ref={feedRef}
-          onScroll={onScroll}
-          role="region"
-          aria-label="作品图片"
-          /* 可滚动区域要能键盘聚焦，否则键盘用户滚不动它 */
-          tabIndex={0}
-        >
-          <div className="wd-feed-in">{feed}</div>
+        {/* ── 图片流：全部作品首尾相接，滚到底就是下一个作品 ──
+            外面这层 wrap 只为托住覆盖层（Liquid Scroll 渐进模糊 + 滚动黑渐变）。
+            ⚠ 覆盖层必须在**滚动容器外面**，否则会跟着内容一起滚走。 */}
+        <div className={cn("wd-feed-wrap", scrolled && "is-scrolled")}>
+          <div
+            className="wd-feed"
+            ref={feedRef}
+            onScroll={onScroll}
+            role="region"
+            aria-label="作品图片"
+            /* 可滚动区域要能键盘聚焦，否则键盘用户滚不动它 */
+            tabIndex={0}
+          >
+            <div className="wd-feed-in">{feed}</div>
+          </div>
+          {/* 6 层模糊 + 1 层黑渐变；层参数全在 globals.css 的 .wd-lq 段落里 */}
+          <div className="wd-lq" aria-hidden="true">
+            <div className="wd-lq-band wd-lq-t">
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+              <span className="wd-lq-tint" />
+            </div>
+            <div className="wd-lq-band wd-lq-b">
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
+          </div>
         </div>
       </div>
     </div>

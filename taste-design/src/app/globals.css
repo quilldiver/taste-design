@@ -1442,7 +1442,17 @@
   transform: scale(1.25);
 }
 
-/* ── 右：图片流 ── */
+/* ── 右：图片流 ──
+   结构：.wd-feed-wrap（定尺寸 + 定位上下文）> .wd-feed（滚动容器）+ .wd-lq（覆盖层）。
+   ⚠ 覆盖层必须放在**滚动容器外面**：放里面会跟着内容一起滚走；改用 sticky 又会占掉
+   一份文档流高度。外面这层 relative 就是为它准备的，absolute inset:0 精确盖住整块。 */
+.wd-feed-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+}
 .wd-feed {
   position: relative;
   flex: 1 1 auto;
@@ -1457,6 +1467,105 @@
 .wd-feed::-webkit-scrollbar {
   width: 0;
   height: 0;
+}
+
+/* ── Liquid Scroll：图片流上下边缘的渐进模糊（只在这一页）──
+   浏览器没有「渐变 blur」，所以用 6 层 backdrop-filter 叠出来：每层的 blur 是固定的
+   （层号越大越轻），靠 mask 决定它**从边缘起能活多久** —— 最糊那层只覆盖最外面
+   30%，最轻那层一直铺到带底。叠加后就是边缘最糊、向内连续变清、没有台阶。
+   ⚠ 每层 blur 必须**递减**：backdrop-filter 是串联的（后一层模糊的是前一层的输出），
+   等强叠 6 层会把模糊度乘成 √6 倍，边缘直接糊成一块死色。
+   ⚠ 动这里的层数 / 数值后要重新截图确认「看不到台阶」。 */
+.wd-lq {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  --wd-lq-h: clamp(56px, 8vh, 100px);
+}
+.wd-lq-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: var(--wd-lq-h);
+}
+.wd-lq-t {
+  top: 0;
+  --wd-gd: to bottom;
+}
+.wd-lq-b {
+  bottom: 0;
+  --wd-gd: to top;
+}
+.wd-lq-band > span:nth-child(-n + 6) {
+  position: absolute;
+  inset: 0;
+  -webkit-backdrop-filter: blur(var(--b));
+  backdrop-filter: blur(var(--b));
+  -webkit-mask-image: linear-gradient(
+    var(--wd-gd),
+    #000 0%,
+    #000 var(--m1),
+    transparent var(--m2)
+  );
+  mask-image: linear-gradient(var(--wd-gd), #000 0%, #000 var(--m1), transparent var(--m2));
+}
+.wd-lq-band > span:nth-child(1) {
+  --b: 9px;
+  --m1: 0%;
+  --m2: 30%;
+}
+.wd-lq-band > span:nth-child(2) {
+  --b: 7px;
+  --m1: 6%;
+  --m2: 44%;
+}
+.wd-lq-band > span:nth-child(3) {
+  --b: 5.2px;
+  --m1: 14%;
+  --m2: 58%;
+}
+.wd-lq-band > span:nth-child(4) {
+  --b: 3.6px;
+  --m1: 25%;
+  --m2: 72%;
+}
+.wd-lq-band > span:nth-child(5) {
+  --b: 2.2px;
+  --m1: 40%;
+  --m2: 86%;
+}
+.wd-lq-band > span:nth-child(6) {
+  --b: 1px;
+  --m1: 58%;
+  --m2: 100%;
+}
+/* 顶部整组（6 层模糊 + 黑渐变）**随滚动淡入** —— .is-scrolled 由 JS 切。
+   为什么顶部要淡入而底部常驻：静止时图片流顶上就是**第一个作品的标题**，
+   常驻的话一进页就把标题糊掉；而滚过之后顶上确实压着内容，模糊才成立。
+   底部相反 —— 内容永远延伸到视口下方，常驻才对。
+   ⚠ 淡入**不能写成 `.wd-lq-t { opacity: … }`**：opacity < 1 会把该元素变成
+   backdrop root，子孙的 backdrop-filter 就只采样它自己（空的），模糊整体失效。
+   所以让每个 span 自己过渡。 */
+.wd-lq-t > span {
+  opacity: 0;
+  transition: opacity 0.38s ease;
+}
+.wd-feed-wrap.is-scrolled .wd-lq-t > span {
+  opacity: 1;
+}
+/* 黑渐变（用户要求）：黑色由顶向下淡出 */
+.wd-lq-tint {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    #000 0%,
+    rgba(0, 0, 0, 0.84) 26%,
+    rgba(0, 0, 0, 0.4) 60%,
+    transparent 100%
+  );
 }
 .wd-feed-in {
   max-width: 1320px;
