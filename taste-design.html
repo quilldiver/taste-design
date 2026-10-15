@@ -568,8 +568,12 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
    需要动画的地方一律用 scrollTo({behavior:'smooth'}) 显式声明。 */
 .wdetail,.wd-nav,.wd-list,.wd-feed,.wd-l1,.wd-l2,.wd-l3{scroll-behavior:auto}
 
-/* ── 左：一级 + 二级 ── */
-.wd-nav{flex:none;width:clamp(230px,28.7vw,410px);
+/* ── 左：一级 + 二级 ──
+   固定 220px（曾经是 clamp(230px,28.7vw,410px)）。不要再改回 vw 弹性值：
+   一级是「英文大字 + 中文小字」同一行、两端都 white-space:nowrap，
+   列一宽字体就跟着 clamp 涨上去。实测 27.2px 字号下最宽的是 Typsetting
+   （196px）与 Packaging（192px），220 里各余 24 / 28px。 */
+.wd-nav{flex:none;width:220px;
   padding-block:2.25rem;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;
   display:flex;flex-direction:column}
 .wd-nav::-webkit-scrollbar{width:0;height:0}

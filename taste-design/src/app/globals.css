@@ -1188,7 +1188,11 @@
 /* ── 左：一级 + 二级 ── */
 .wd-nav {
   flex: none;
-  width: clamp(230px, 28.7vw, 410px);
+  /* 固定 220px（曾经是 clamp(230px, 28.7vw, 410px)）。不要再改回 vw 弹性值：
+     一级是「英文大字 + 中文小字」同一行、两端都 white-space:nowrap，
+     列一宽字体就跟着 clamp 涨上去。实测 27.2px 字号下最宽的是 Typsetting
+     （196px）与 Packaging（192px），220 里各余 24 / 28px。 */
+  width: 220px;
   padding-block: 2.25rem;
   overflow-y: auto;
   scrollbar-width: none;
