@@ -357,10 +357,15 @@ export function WorkIndex({ slug }: { slug: string }) {
                       <ol className="wd-l2" id={`wd-l2-${s.slug}`}>
                         {s.groups.map((g, gi) => (
                           <li key={g}>
+                            {/* ⚠ 高亮要同时看「是不是当前一级」：7 个一级的内联面板全都挂在
+                               DOM 里，而 grp 是「当前作品的二级下标」—— 不加 on 的话，其它
+                               一级的面板里同号那一项也会带上 is-on 与 aria-current
+                               （视觉上被 0fr 收起来看不见，但屏读软件会念出错误项）。
+                               单文件版的 markPanel 一直是同时判 sec 与 g 的。 */}
                             <button
                               type="button"
-                              className={cn("wd-l2b", gi === grp && "is-on")}
-                              aria-current={gi === grp ? "true" : undefined}
+                              className={cn("wd-l2b", on && gi === grp && "is-on")}
+                              aria-current={on && gi === grp ? "true" : undefined}
                               onClick={() => jump(firstOfGrp(si, gi))}
                             >
                               {g}
