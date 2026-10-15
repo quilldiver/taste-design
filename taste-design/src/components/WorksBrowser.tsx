@@ -17,8 +17,15 @@ import { cn } from "@/lib/utils";
  * 用 Math.random() 会让静态导出的 HTML 与 hydration 结果不一致。
  */
 
-/** 每张卡的固定倾斜角，避免牌堆看起来过于机械 */
+/** 每张卡的固定倾斜角，避免牌堆看起来过于机械（桌面：横向叠放，角度细微） */
 const TILT = [-2.6, 1.5, -1.1, 2.4, -2.9, 1.2, -1.8];
+
+/**
+ * 窄屏（<1024）竖排时用的倾斜角 —— 一张卡独占一行，细微角度看不出「没理齐」，
+ * 所以放大到 1.8~6.4°。⚠ 上限 6.4°：再大倾斜后的包围盒（≈ 卡宽 × 1.17）
+ * 就会顶出版心，被 main 的 overflow-x:clip 切掉边角（卡宽的预算见 .deck 的 --mcw）。
+ */
+const TILT_M = [2.2, -5.2, 4.4, -2.8, 6.4, -4.6, 1.8];
 
 /** 每类一张封面（1000×1500 = 2:3，与卡片同比例零裁切），外链 public/card/ */
 const IMG: Record<string, string> = {
@@ -63,7 +70,8 @@ export function WorksBrowser() {
               className={cn("deck-card", on && "is-active")}
               style={
                 {
-                  "--tilt": `${TILT[i % TILT.length]}deg`,
+                  "--tilt-d": `${TILT[i % TILT.length]}deg`,
+                  "--tilt-m": `${TILT_M[i % TILT_M.length]}deg`,
                   "--shift": shiftOf(i),
                 } as CSSProperties
               }

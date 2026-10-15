@@ -510,6 +510,10 @@
   display: flex;
   justify-content: center;
   align-items: stretch;
+  /* ⚠ padding-inline 必须显式归零：<ul> 的 UA 样式带 40px 左内边距，
+     只写 padding-block 会让整叠牌整体右移 20px。Tailwind preflight 已经归零，
+     这里显式写一遍是为了与单文件版逐字对齐、也不依赖 preflight。 */
+  padding-inline: 0;
   /* 上下留白同样跟窗口高度收放，矮屏优先把空间让给卡片 */
   padding-block: clamp(1rem, 4svh, 2.5rem) clamp(1.25rem, 5svh, 3rem);
   /* ⚠ margin 必须显式归零：<ul> 的 UA/框架默认块间距（实测 56px）会混入
@@ -531,6 +535,11 @@
   position: relative;
   width: var(--cw);
   aspect-ratio: 2 / 3; /* 素材 1000×1500 = 2:3，与卡片同比例零裁切 */
+  /* 倾斜角分两套：--tilt-d 桌面（细微，牌堆叠放时够用）、--tilt-m 窄屏（竖排
+     单独成行，需要更大的角度才看得出「没理齐」）。这里先把 --tilt 落到桌面值，
+     <1024 的媒体查询再把它改指到 --tilt-m —— 内联样式只写 --tilt-d/--tilt-m，
+     不直接写 --tilt，否则内联优先级会把断点覆盖掉。 */
+  --tilt: var(--tilt-d, 0deg);
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 14px;
   background: linear-gradient(165deg, #0b1f4f 0%, #030815 72%);
@@ -694,67 +703,100 @@
 }
 
 @media (max-width: 1023px) {
+  /* ── 窄屏：竖排「没理齐的一叠牌」────────────────────────────────
+     一张一行、整列居中、2:3 竖版，每张各自带一点倾斜。
+     ⚠ 别退回 16:9 满宽横幅：那样每张只有版心宽的 1/2 高，七张连排会变成
+     一条又长又扁的列表，「一副没理齐的牌」的调性就没了。
+     ⚠ 倾斜后包围盒 ≈ 卡片宽 × 1.2（2:3 卡片、最大 6.4° 时约 1.17），
+     所以卡宽要按「包围盒 ≤ 版心宽」反推，否则窄屏边角会被 main 的
+     overflow-x:clip 静默切掉。 */
   .deck {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0.9rem;
-    padding-block: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px; /* 与参考一致：卡间只留 16px */
+    padding-block: clamp(1.75rem, 5svh, 3rem) 0;
+    --mcw: min(
+      max(256px, 36vw),
+      340px,
+      calc((100vw - var(--pad) * 2 - 16px) / 1.2)
+    );
+    --ov: 0px; /* 竖排不重叠、也不推开 */
+    --push: 0px;
+  }
+
+  .deck-cell {
+    width: var(--mcw);
   }
 
   .deck-cell + .deck-cell {
     margin-left: 0;
   }
 
-  /* 单列改为 16:9 横幅：图片 cover，文案压在罩层上 */
   .deck-card {
     width: 100%;
-    aspect-ratio: 16 / 9;
-    transform: none;
-    border-radius: 12px;
+    aspect-ratio: 2 / 3;
+    border-radius: 16px;
+    --tilt: var(--tilt-m, 0deg);
   }
 
+  /* 窄屏不做放大反馈：卡片已经贴到版心内侧，再放大一档就会横向溢出 */
   .deck-card.is-active {
-    --lift: 0px;
+    --lift: -8px;
     --zs: 1;
     box-shadow: none;
   }
 
   .deck-card.is-active::before {
-    opacity: 0;
+    opacity: 1;
   }
 
+  /* 竖版卡面几乎全是图，压暗只留在上下两端，中间尽量透出素材 */
   .deck-card::after {
     background: linear-gradient(
       180deg,
-      rgba(3, 8, 21, 0.72) 0%,
-      rgba(3, 8, 21, 0.5) 45%,
-      rgba(3, 8, 21, 0.9) 100%
+      rgba(3, 8, 21, 0.34) 0%,
+      rgba(3, 8, 21, 0.05) 26%,
+      rgba(3, 8, 21, 0.12) 56%,
+      rgba(3, 8, 21, 0.88) 100%
     );
   }
 
-  /* 横幅：文案横向排布，编号挪到右上角 */
-  .deck-face {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 1.1rem;
-    height: auto;
-    padding: 1.05rem 1.15rem;
+  .deck-card.is-active::after {
+    background: linear-gradient(
+      180deg,
+      rgba(3, 8, 21, 0.3) 0%,
+      rgba(3, 8, 21, 0.04) 26%,
+      rgba(3, 8, 21, 0.1) 56%,
+      rgba(3, 8, 21, 0.95) 100%
+    );
   }
 
-  .deck-face > div {
-    align-self: auto;
-  }
-
+  /* 编号挪到右上角（参考的卡面就是这个位置），标题仍留在左下。
+     ⚠ 编号一旦脱离文档流，.deck-face 里就只剩「文案」一个子项 ——
+     必须把网格收成单行 1fr，否则它会落进原来的第一行(auto)、被顶到卡片顶部。 */
   .deck-idx {
     position: absolute;
-    top: 0.9rem;
+    top: 1.1rem;
     right: 1.15rem;
+    margin: 0;
   }
 
+  .deck-face {
+    grid-template-rows: 1fr;
+    padding: 1.1rem 1.15rem 1.2rem;
+  }
+
+  /* 说明留给「点开」：300px 宽的卡上再堆两行字会盖掉封面。
+     基础规则本来就是 opacity:0，这里只要不再打开它即可。 */
   .deck-note {
-    opacity: 1;
-    max-height: none;
+    margin-top: 0.4rem;
+  }
+
+  /* 窄屏整体居中：眉标、标题与卡列同一条中轴（参考在 800 就是居中构图） */
+  .works-page .label,
+  .works-page h1 {
+    text-align: center;
   }
 }
 
