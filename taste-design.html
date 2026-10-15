@@ -367,7 +367,7 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
   padding-block:2.5rem 3rem;margin:0;list-style:none}
 .deck-cell{position:relative;min-width:0}
 .deck-cell + .deck-cell{margin-left:calc(-1 * var(--ov))}
-.deck-card{position:relative;width:var(--cw);aspect-ratio:3 / 4.15;
+.deck-card{position:relative;width:var(--cw);aspect-ratio:2 / 3;
   border:1px solid rgba(255,255,255,.16);border-radius:14px;
   background:linear-gradient(165deg,#0b1f4f 0%,#030815 72%);overflow:hidden;
   /* 位移 / 倾斜 / 浮起缩放合成一个 transform，交给同一次过渡 */
@@ -377,15 +377,25 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
   transition:transform .58s cubic-bezier(.19,1.26,.28,1),
     box-shadow .38s ease,border-color .38s ease;
   will-change:transform}
+/* 作品封面图：铺满整卡（素材 1000×1500 = 2:3，与卡片同比例零裁切） */
+.deck-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  display:block;user-select:none;-webkit-user-drag:none}
 /* 顶部冷光：把卡片从深底里托出来，只在聚焦时亮起 */
-.deck-card::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;
+.deck-card::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;
   background:radial-gradient(120% 60% at 50% -10%,rgba(92,152,246,.2),transparent 62%);
   transition:opacity .38s ease}
+/* 压暗层：素材明暗不一（深蓝 logo 墙 → 亮黄海报），上下加深保证文字可读 */
+.deck-card::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:linear-gradient(180deg,rgba(3,8,21,.6) 0%,rgba(3,8,21,.26) 30%,
+    rgba(3,8,21,.3) 55%,rgba(3,8,21,.92) 100%)}
 .deck-card.is-active{--lift:-14px;--zs:1.055;border-color:rgba(255,255,255,.42);
   /* 模糊压到 24px：3D/缩放层上的大模糊会让 Chrome 下调栅格分辨率、字发虚 */
   box-shadow:0 10px 24px -12px rgba(0,0,0,.9)}
 .deck-card.is-active::before{opacity:1}
-.deck-face{position:relative;z-index:2;height:100%;display:grid;
+.deck-card.is-active::after{background:linear-gradient(180deg,rgba(3,8,21,.55) 0%,
+  rgba(3,8,21,.2) 30%,rgba(3,8,21,.24) 55%,rgba(3,8,21,.9) 100%);
+  transition:background .38s ease}
+.deck-face{position:relative;z-index:3;height:100%;display:grid;
   grid-template-rows:auto 1fr auto;padding:1.05rem 1.1rem 1.2rem}
 .deck-idx{display:flex;align-items:center;gap:.55rem;margin:0;
   font-family:var(--f-mono);font-size:.68rem;letter-spacing:.2em;color:var(--mute)}
@@ -408,10 +418,13 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
 @media (max-width:1023px){
   .deck{display:grid;grid-template-columns:1fr;gap:.9rem;padding-block:0}
   .deck-cell + .deck-cell{margin-left:0}
-  .deck-card{width:100%;aspect-ratio:auto;transform:none;border-radius:12px}
+  /* 单列改为 16:9 横幅：图片 cover，文案压在均匀罩层上 */
+  .deck-card{width:100%;aspect-ratio:16 / 9;transform:none;border-radius:12px}
   .deck-card.is-active{--lift:0px;--zs:1;box-shadow:none}
   .deck-card.is-active::before{opacity:0}
-  /* 单列：图标在左、文案在右，编号挪到右上角 */
+  .deck-card::after{background:linear-gradient(180deg,rgba(3,8,21,.72) 0%,
+    rgba(3,8,21,.5) 45%,rgba(3,8,21,.9) 100%)}
+  /* 横幅：图标在左、文案在右，编号挪到右上角 */
   .deck-face{display:flex;align-items:center;gap:1.1rem;height:auto;padding:1.05rem 1.15rem}
   .deck-idx{position:absolute;top:.9rem;right:1.15rem}
   .deck-icon{flex:0 0 auto;width:44px;align-self:auto;justify-self:auto}
@@ -878,13 +891,13 @@ void main(){
     misc:[14,32,50].map(y=>[14,32,50].map(x=>`<circle cx="${x}" cy="${y}" r="3.2"/>`).join('')).join('')
   };
   const DECKS=[
-    {kind:'logo', idx:'001', cn:'标志设计', en:'LOGO',         note:'一个符号，撑住所有触点'},
-    {kind:'brand',idx:'002', cn:'品牌设计', en:'BRANDING',     note:'把调性与规矩写成能复用的系统'},
-    {kind:'event',idx:'003', cn:'活动设计', en:'CAMPAIGN',     note:'限时、限地，一次说清一件事'},
-    {kind:'pack', idx:'004', cn:'包装设计', en:'PACKAGING',    note:'货架上的三秒决断'},
-    {kind:'type', idx:'005', cn:'排版设计', en:'TYPOGRAPHY',   note:'字距与行距里的呼吸节奏'},
-    {kind:'ip',   idx:'006', cn:'IP设计',   en:'IP & MASCOT',  note:'能被记住，也能被延展'},
-    {kind:'misc', idx:'007', cn:'其他设计', en:'MISCELLANEOUS',note:'不好归类的好东西'}
+    {kind:'logo', idx:'001', cn:'标志设计', en:'LOGO',         note:'一个符号，撑住所有触点',       img:'card/card_logo_1x.webp'},
+    {kind:'brand',idx:'002', cn:'品牌设计', en:'BRANDING',     note:'把调性与规矩写成能复用的系统', img:'card/card_brand_1x.webp'},
+    {kind:'event',idx:'003', cn:'活动设计', en:'CAMPAIGN',     note:'限时、限地，一次说清一件事',   img:'card/card_events_1x.webp'},
+    {kind:'pack', idx:'004', cn:'包装设计', en:'PACKAGING',    note:'货架上的三秒决断',            img:'card/card_package_1x.webp'},
+    {kind:'type', idx:'005', cn:'排版设计', en:'TYPOGRAPHY',   note:'字距与行距里的呼吸节奏',       img:'card/card_layout_1x.webp'},
+    {kind:'ip',   idx:'006', cn:'IP设计',   en:'IP & MASCOT',  note:'能被记住，也能被延展',        img:'card/card_ip_1x.webp'},
+    {kind:'misc', idx:'007', cn:'其他设计', en:'MISCELLANEOUS',note:'不好归类的好东西',            img:'card/card_other_1x.webp'}
   ];
   /* 写死的倾斜角：随机值每次刷新都在变，牌堆会失去「同一副牌」的稳定感 */
   const TILT=[-2.6,1.5,-1.1,2.4,-2.9,1.2,-1.8];
@@ -902,6 +915,7 @@ void main(){
     deck.innerHTML=DECKS.map((d,i)=>`
       <li class="deck-cell">
         <article class="deck-card" style="--tilt:${TILT[i%TILT.length]}deg">
+          <img class="deck-img" src="${d.img}" alt="" loading="lazy" decoding="async" draggable="false">
           <div class="deck-face">
             <p class="deck-idx">${d.idx}<span class="deck-dot" aria-hidden="true"></span></p>
             <span class="deck-icon" aria-hidden="true">

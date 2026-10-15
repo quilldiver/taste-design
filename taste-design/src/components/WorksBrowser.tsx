@@ -2,6 +2,7 @@
 
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { WORK_DECKS } from "@/lib/site";
+import { BASE } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 /**
@@ -18,6 +19,17 @@ import { cn } from "@/lib/utils";
 
 /** 每张卡的固定倾斜角，避免牌堆看起来过于机械 */
 const TILT = [-2.6, 1.5, -1.1, 2.4, -2.9, 1.2, -1.8];
+
+/** 每类一张封面（1000×1500 = 2:3，与卡片同比例零裁切），外链 public/card/ */
+const IMG: Record<string, string> = {
+  logo: "card_logo_1x.webp",
+  brand: "card_brand_1x.webp",
+  event: "card_events_1x.webp",
+  pack: "card_package_1x.webp",
+  type: "card_layout_1x.webp",
+  ip: "card_ip_1x.webp",
+  misc: "card_other_1x.webp",
+};
 
 /** 统一规格：64×64、线稿、1.6 描边，随卡面文字色变化 */
 const ICONS: Record<string, ReactNode> = {
@@ -109,6 +121,14 @@ export function WorksBrowser() {
               }
               onMouseEnter={() => setActive(i)}
             >
+              <img
+                className="deck-img"
+                src={`${BASE}/card/${IMG[d.kind]}`}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                draggable={false}
+              />
               <div className="deck-face">
                 <p className="deck-idx">
                   {d.index}

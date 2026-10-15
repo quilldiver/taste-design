@@ -447,7 +447,7 @@
 .deck-card {
   position: relative;
   width: var(--cw);
-  aspect-ratio: 3 / 4.15;
+  aspect-ratio: 2 / 3; /* 素材 1000×1500 = 2:3，与卡片同比例零裁切 */
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 14px;
   background: linear-gradient(165deg, #0b1f4f 0%, #030815 72%);
@@ -464,11 +464,24 @@
   will-change: transform;
 }
 
+/* 作品封面图：铺满整卡 */
+.deck-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
 /* 顶部冷光：把卡片从深底里托出来，只在聚焦时亮起 */
 .deck-card::before {
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 1;
   background: radial-gradient(
     120% 60% at 50% -10%,
     rgba(92, 152, 246, 0.2),
@@ -477,6 +490,22 @@
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.38s ease;
+}
+
+/* 压暗层：素材明暗不一（深蓝 logo 墙 → 亮黄海报），上下加深保证文字可读 */
+.deck-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(3, 8, 21, 0.6) 0%,
+    rgba(3, 8, 21, 0.26) 30%,
+    rgba(3, 8, 21, 0.3) 55%,
+    rgba(3, 8, 21, 0.92) 100%
+  );
 }
 
 .deck-card.is-active {
@@ -491,9 +520,20 @@
   opacity: 1;
 }
 
+.deck-card.is-active::after {
+  background: linear-gradient(
+    180deg,
+    rgba(3, 8, 21, 0.55) 0%,
+    rgba(3, 8, 21, 0.2) 30%,
+    rgba(3, 8, 21, 0.24) 55%,
+    rgba(3, 8, 21, 0.9) 100%
+  );
+  transition: background 0.38s ease;
+}
+
 .deck-face {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   height: 100%;
   display: grid;
   grid-template-rows: auto 1fr auto;
@@ -598,10 +638,10 @@
     margin-left: 0;
   }
 
+  /* 单列改为 16:9 横幅：图片 cover，文案压在罩层上 */
   .deck-card {
     width: 100%;
-    aspect-ratio: auto;
-    min-height: 0;
+    aspect-ratio: 16 / 9;
     transform: none;
     border-radius: 12px;
   }
@@ -612,7 +652,20 @@
     box-shadow: none;
   }
 
-  /* 单列：图标在左、文案在右，编号挪到右上角 */
+  .deck-card.is-active::before {
+    opacity: 0;
+  }
+
+  .deck-card::after {
+    background: linear-gradient(
+      180deg,
+      rgba(3, 8, 21, 0.72) 0%,
+      rgba(3, 8, 21, 0.5) 45%,
+      rgba(3, 8, 21, 0.9) 100%
+    );
+  }
+
+  /* 横幅：图标在左、文案在右，编号挪到右上角 */
   .deck-face {
     position: relative;
     display: flex;
