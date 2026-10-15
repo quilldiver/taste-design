@@ -197,6 +197,38 @@
 }
 
 /* ─────────────────────────────────────────────
+   第 1 屏 <1024：上下分屏 —— 文字贴画面上方，木马居中在下半区
+   .hero-carousel 原来是「零高度」的（.carousel-fan 是 0×0，卡片全是绝对定位），
+   所以木马既不占行高、也会和文字重叠、还被屏底切掉。这里给它真实行高：
+   grid 两行 = auto(文案) + minmax(0,1fr)(木马)，1fr 吃掉剩余空间，
+   .carousel 填满这一行、place-items:center 把星形居中 ⇒ 木马自然落在下半区中间。
+   ⚠ 矮屏（375×667 这类）文案本身就快占满一屏，此时 min-height 兜底，
+   让第 1 屏略高于一屏（屏尾哨兵本来就能停在它的底部），木马不会压到文字。
+   ⚠ 这些是「非分层」样式，权重高于 Tailwind 的 utilities，所以能盖住 items-center /
+     px / pt-28 这类工具类；反过来也意味着改 page.tsx 的 utilities 时要留意这里。
+   ───────────────────────────────────────────── */
+@media (max-width: 1023.98px) {
+  .hero {
+    align-items: stretch;
+    padding-block: 5.5rem 1.5rem;
+  }
+  .hero-grid {
+    grid-template-rows: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 1rem;
+  }
+  .hero-copy {
+    align-self: start;
+  }
+  .hero-carousel {
+    align-self: stretch;
+    min-height: min(30svh, 240px);
+    /* 给 .carousel 提供 cqh：木马按「下半区高度」缩放 */
+    container-type: size;
+  }
+}
+
+/* ─────────────────────────────────────────────
    3D 作品旋转木马 —— 光圈 / 风车结构（复刻 titarvl）
    N 张卡片共用一根中央竖轴：每张以自身左缘中点为轴心
    （transform-origin: 0 50%）依次转开 360/N 度，
@@ -209,13 +241,21 @@
   font-size: clamp(12px, 1.425vw, 20.25px);
   --cw: 19em;
   --ch: 23.75em; /* 290×363 ≈ 4:5，与参考卡片同比例 */
+  /* 整体倾斜缩放 --s 放这里（.carousel-tilt 继承），窄屏下调；
+     --fit 是 <1024 上下分屏时「星形占可用空间的比例」
+     = 0.92 ÷ 42.7em(星形包围盒) ÷ --s，供 font-size 的 cqh/vw 项使用，
+     改 --s 时必须一起改（三个断点各一对） */
+  --s: 0.8;
+  --fit: 0.0269;
   width: 100%;
   display: grid;
   place-items: center;
   perspective: 1800px;
   perspective-origin: 50% 46%;
   position: relative;
-  touch-action: none;
+  /* pan-y 而不是 none：<1024 时木马独占下半区、占位很大，
+     none 会让这一整片区域在触屏上「吞掉」纵向滑动；水平拖拽仍然可用 */
+  touch-action: pan-y;
   cursor: grab;
   user-select: none;
   -webkit-user-select: none;
@@ -247,7 +287,6 @@
 /* titarvl 的倾斜构图：先绕 Z 侧倾，再绕 X 俯仰。
    --fx / --fy 由组件写入（鼠标位置驱动的倾斜跟随），未启用时为 0 */
 .carousel-tilt {
-  --s: 0.8;
   --rz: -18deg;
   --rx: -40deg;
   transform-style: preserve-3d;
@@ -428,16 +467,30 @@
 }
 
 @media (max-width: 1024px) {
-  .carousel-tilt {
+  .carousel {
     --s: 0.78;
+    --fit: 0.0276;
   }
 }
 
 @media (max-width: 640px) {
-  .carousel-tilt {
+  .carousel {
     --s: 0.62;
+    --fit: 0.0347;
     --rz: -16deg;
     --rx: -38deg;
+  }
+}
+
+/* <1024：第 1 屏上下分屏 —— 木马填满 .hero-carousel 那一行
+   （该层是 container-type:size），并按 min(视口宽, 行高) 缩放：
+   高窗口放大、矮窗口缩小，永远居中在下半区。
+   星形包围盒 ≈ 42.7em×--s 且近似正方，所以两个方向共用同一个 --fit。
+   ⚠ 这条必须排在基础 .carousel 规则之后：媒体查询不提升权重，写在前面会被覆盖。 */
+@media (max-width: 1023.98px) {
+  .carousel {
+    height: 100%;
+    font-size: calc(var(--fit) * min(100vw, 100cqh));
   }
 }
 

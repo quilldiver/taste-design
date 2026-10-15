@@ -8,11 +8,11 @@ function HeroScreen() {
   return (
     <section
       id="studio"
-      className="screen relative flex min-h-[100svh] items-center pb-16 pt-28 sm:pb-20 sm:pt-32"
+      className="screen hero relative flex min-h-[100svh] items-center pb-16 pt-28 sm:pb-20 sm:pt-32"
     >
-      <div className="mx-auto grid w-full max-w-[1680px] grid-cols-1 items-center gap-14 px-[clamp(1rem,4.5vw,2rem)] lg:grid-cols-[1fr_1.05fr] lg:gap-8">
+      <div className="hero-grid mx-auto grid w-full max-w-[1680px] grid-cols-1 items-center gap-14 px-[clamp(1rem,4.5vw,2rem)] lg:grid-cols-[1fr_1.05fr] lg:gap-8">
         {/* 左：工作室介绍 */}
-        <div className="order-1 lg:pr-6">
+        <div className="hero-copy order-1 lg:pr-6">
           <p className="label">Creative Studio — Since {STUDIO.since}</p>
 
           <h1 className="display mt-5 text-[clamp(2.6rem,6.4vw,5.2rem)]">
@@ -44,8 +44,8 @@ function HeroScreen() {
           </dl>
         </div>
 
-        {/* 右：3D 木马 */}
-        <div className="order-2">
+        {/* 右：3D 木马（<1024 时落在下半区、按可用高度缩放，见 globals.css） */}
+        <div className="hero-carousel order-2">
           <Carousel3D />
         </div>
       </div>
