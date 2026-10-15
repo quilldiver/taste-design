@@ -1,0 +1,736 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────
+   字体：英文统一 Alimama Agile VF（四轴可变，本地 woff2）
+   中文统一黑体系（苹方 → 冬青黑 → 黑体-简 → 雅黑 → 思源黑体）
+   ───────────────────────────────────────────── */
+@font-face {
+  font-family: "Alimama Agile VF";
+  /* 字体放在 src/fonts/ 由 webpack 打包（而不是 public/）：
+     public/ 里的资源在 CSS 中只能写根绝对路径 /fonts/...，Next 不会给它补 basePath，
+     部署到 GitHub Pages 的 /<repo> 子路径后会 404。
+     走 webpack 会被输出到 /_next/static/media/ 下，basePath 自动生效。 */
+  src: url("../fonts/AlimamaAgileVF-Thin.woff2") format("woff2");
+  font-weight: 100 700;
+  font-stretch: 75% 125%;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ─────────────────────────────────────────────
+   设计令牌
+   70% 深蓝 / 20% 中蓝流光 / 10% 炉火琥珀
+   ───────────────────────────────────────────── */
+@theme {
+  --font-display: "Alimama Agile VF", "PingFang SC", "Hiragino Sans GB",
+    "Heiti SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-sans: var(--font-display);
+  --font-mono: var(--font-display);
+
+  --color-deep: #030815;
+  --color-abyss: #061227;
+  --color-mid: #0b1f4f;
+  --color-blue: #1b51bd;
+  --color-glow: #5c98f6;
+  --color-ember: rgba(255, 255, 255, 0.5);
+
+  /* 文字只有两档：主文本 #FFF 90% / 辅助文本 #FFF 50% */
+  --color-ink: rgba(255, 255, 255, 0.9);
+  --color-mute: rgba(255, 255, 255, 0.5);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+    /* mandatory：任何幅度滚动松手后都吸附到最近的一屏（proximity 轻扫不吸附） */
+    scroll-snap-type: y mandatory;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.65;
+    /* Agile 默认实例为 Thin(100)/Narrow(75)，字重与字宽必须显式给值 */
+    font-weight: 400;
+    font-stretch: 100%;
+    color: var(--color-ink);
+    background-color: var(--color-deep);
+    min-height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-kerning: normal;
+  }
+
+  ::selection {
+    background: var(--color-ember);
+    color: var(--color-deep);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ember);
+    outline-offset: 4px;
+    border-radius: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* ─────────────────────────────────────────────
+   背景层（无 WebGL 时的兜底，始终位于最底层）
+   ───────────────────────────────────────────── */
+.bg-fallback {
+  position: fixed;
+  inset: 0;
+  z-index: -20;
+  pointer-events: none;
+  /* 兜底配色模拟波浪 shader 构图：顶部黑、底部蓝色光晕升起 */
+  background:
+    radial-gradient(90% 60% at 30% 106%, #0f6ba8 0%, transparent 62%),
+    radial-gradient(80% 52% at 78% 112%, #0a527f 0%, transparent 64%),
+    linear-gradient(180deg, #000 0%, #01050c 46%, #032844 78%, #045a8c 100%);
+}
+
+/* 统一压暗一层，保证文字对比度，同时让 shader 退到"背景"的位置 */
+.shader-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: -9;
+  pointer-events: none;
+  /* 轻压暗：新 shader 最亮处与白字对比约 5.4:1，轻罩保过渡区 */
+  background: rgba(0, 0, 0, 0.14);
+}
+
+/* 细颗粒覆盖层：给整体加一层胶片质感 */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: -8;
+  pointer-events: none;
+  opacity: 0.35;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+/* ─────────────────────────────────────────────
+   排版原语
+   ───────────────────────────────────────────── */
+.display {
+  font-family: var(--font-display);
+  font-variation-settings: "SRIF" 0;
+  font-weight: 620;
+  font-stretch: 97%;
+  line-height: 0.98;
+  letter-spacing: -0.015em;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.6875rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-mute);
+}
+
+.hairline {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.28) 12%,
+    rgba(255, 255, 255, 0.28) 88%,
+    transparent
+  );
+  height: 1px;
+}
+
+/* ── 整屏吸附：每一屏一个吸附点 ── */
+.screen {
+  scroll-snap-align: start;
+  scroll-snap-stop: always; /* 快速滑动也不跳屏 */
+}
+
+/* 屏尾补一个吸附点：某屏内容超过一屏时，mandatory 下也能停在它的底部，
+   不会把中段内容锁死（1px 绝对定位哨兵，不影响布局） */
+.screen::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  scroll-snap-align: end;
+}
+
+/* ─────────────────────────────────────────────
+   3D 作品旋转木马 —— 光圈 / 风车结构（复刻 titarvl）
+   N 张卡片共用一根中央竖轴：每张以自身左缘中点为轴心
+   （transform-origin: 0 50%）依次转开 360/N 度，
+   整体 scale + rotateZ + rotateX 倾斜后呈星形；
+   组件内 JS 驱动绕轴自转 + 拖拽甩动惯性
+   ───────────────────────────────────────────── */
+.carousel {
+  /* 所有内部尺寸都是 em，改这一个值就能整体缩放。
+     150% 尺寸档；perspective 同比放大（1200→1800）保持透视形变一致 */
+  font-size: clamp(12px, 1.425vw, 20.25px);
+  --cw: 19em;
+  --ch: 23.75em; /* 290×363 ≈ 4:5，与参考卡片同比例 */
+  width: 100%;
+  display: grid;
+  place-items: center;
+  perspective: 1800px;
+  perspective-origin: 50% 46%;
+  position: relative;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.carousel.dragging {
+  cursor: grabbing;
+}
+
+/* 星形背后一团冷光，把形态从深底里托出来。
+   min() 卡住上限：不超出容器宽、不超出 72svh，避免撑出横向滚动 */
+.carousel::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(58em, 100%);
+  height: min(42em, 72svh);
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    closest-side,
+    rgba(27, 81, 189, 0.26),
+    transparent 72%
+  );
+  filter: blur(2em);
+  pointer-events: none;
+}
+
+/* titarvl 的倾斜构图：先绕 Z 侧倾，再绕 X 俯仰。
+   --fx / --fy 由组件写入（鼠标位置驱动的倾斜跟随），未启用时为 0 */
+.carousel-tilt {
+  --s: 0.8;
+  --rz: -18deg;
+  --rx: -40deg;
+  transform-style: preserve-3d;
+  transform: scale(var(--s)) rotateZ(var(--rz))
+    rotateX(calc(var(--rx) + var(--fx, 0deg))) rotateY(var(--fy, 0deg));
+}
+
+/* 自转层：0×0 的定位原点，即整个星形的轴心 */
+.carousel-fan {
+  position: relative;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* 卡片：轴心 = 左缘中点，N 张全部叠在同一点上再各自转开 */
+.carousel-card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--cw);
+  height: var(--ch);
+  margin: 0;
+  transform-origin: 0 50%;
+  transform: translateY(-50%) rotateY(calc(var(--i) * var(--theta)));
+  transform-style: preserve-3d;
+  border-radius: 0.7em;
+  box-shadow: 0 1.6em 3.4em -1.2em rgba(0, 0, 0, 0.85);
+}
+
+/* 正反两个面都做出来：参考站里背面的卡片是实色深底，不是镂空 */
+.carousel-face {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* 正反两面共用同一套材质：底色渐变 + 盘面 + 颗粒 + 边框，只有朝向不同 */
+.carousel-face-front,
+.carousel-face-back {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: linear-gradient(165deg, #0b1f4f 0%, #030815 72%);
+}
+
+.carousel-face-back {
+  transform: rotateY(180deg);
+}
+
+.carousel-back-mark {
+  position: relative;
+  z-index: 2;
+  padding: 1.1em;
+  font-family: var(--font-mono);
+  font-size: 0.72em;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* CSS 生成的占位"盘面"，无外部资源依赖 */
+.carousel-plate {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.carousel-plate-blob {
+  position: absolute;
+  inset: -22%;
+  background:
+    radial-gradient(
+      closest-side at 32% 34%,
+      hsl(var(--hue) 84% 58% / 0.9),
+      transparent 68%
+    ),
+    radial-gradient(
+      closest-side at 72% 66%,
+      hsl(calc(var(--hue) + 26) 88% 62% / 0.6),
+      transparent 72%
+    ),
+    conic-gradient(
+      from calc(var(--i) * 42deg),
+      hsl(var(--hue) 72% 46% / 0.5),
+      transparent 38%,
+      hsl(calc(var(--hue) - 34) 76% 54% / 0.42),
+      transparent 76%
+    );
+  filter: blur(0.45em) saturate(1.2);
+}
+
+.carousel-plate-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+}
+
+.carousel-caption {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28em;
+  padding: 1.1em 1em 1em;
+  background: linear-gradient(
+    to top,
+    rgba(3, 8, 21, 0.94) 0%,
+    rgba(3, 8, 21, 0.55) 55%,
+    transparent 100%
+  );
+}
+
+.carousel-index {
+  font-family: var(--font-mono);
+  font-size: 0.78em;
+  letter-spacing: 0.16em;
+  color: var(--color-ember);
+}
+
+.carousel-title {
+  font-family: var(--font-display);
+  font-variation-settings: "SRIF" 0;
+  font-weight: 620;
+  font-stretch: 97%;
+  font-size: 1.75em;
+  line-height: 1;
+  color: var(--color-ink);
+}
+
+/* 小号英文标签统一 500：Agile 可变轴默认落在 Thin，不显式给字重会过细 */
+.carousel-index,
+.carousel-type,
+.carousel-back-mark {
+  font-weight: 500;
+}
+
+.carousel-type {
+  font-family: var(--font-mono);
+  font-size: 0.66em;
+  letter-spacing: 0.2em;
+  color: var(--color-mute);
+}
+
+@media (max-width: 1024px) {
+  .carousel-tilt {
+    --s: 0.78;
+  }
+}
+
+@media (max-width: 640px) {
+  .carousel-tilt {
+    --s: 0.62;
+    --rz: -16deg;
+    --rx: -38deg;
+  }
+}
+
+/* ─────────────────────────────────────────────
+   预留屏的空状态
+   ───────────────────────────────────────────── */
+.empty-frame {
+  position: relative;
+  border: 1px dashed rgba(255, 255, 255, 0.22);
+  border-radius: 4px;
+}
+
+.empty-frame::before,
+.empty-frame::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-color: rgba(255, 255, 255, 0.5);
+  border-style: solid;
+}
+
+.empty-frame::before {
+  top: -1px;
+  left: -1px;
+  border-width: 1px 0 0 1px;
+}
+
+.empty-frame::after {
+  right: -1px;
+  bottom: -1px;
+  border-width: 0 1px 1px 0;
+}
+
+/* ─────────────────────────────────────────────
+   导航黑幕：第二屏（纯黑球体屏）盖住视口顶部时，
+   在导航下铺一层由上而下淡出的黑幕（#000 100% → #000 0%），
+   白字压在球体/卡片上依然干净。高度比本体多 2rem 留出射余量。
+   ───────────────────────────────────────────── */
+.site-nav::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: calc(100% + 2rem);
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+  background: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0) 100%);
+}
+
+.site-nav[data-shade="true"]::before {
+  opacity: 1;
+}
+
+/* ─────────────────────────────────────────────
+   品牌文字浮现：首屏只留图形 logo，进入第二屏后
+   文字从遮罩下方往上浮现（第二行略延迟）
+   ───────────────────────────────────────────── */
+.brand-txt > * {
+  transform: translateY(120%);
+  opacity: 0;
+  transition:
+    transform 0.6s cubic-bezier(0.22, 0.7, 0.2, 1),
+    opacity 0.45s ease;
+}
+
+.brand-txt > *:last-child {
+  transition-delay: 0.08s;
+}
+
+.brand-txt[data-in="true"] > * {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* ─────────────────────────────────────────────
+   第 2 屏：3D 品牌球（Framer 3D Globe Gallery 同构）
+   14 品牌 ×3 = 42 张卡 Fibonacci 铺满球面，背面卡片可见（镜像翻正）
+   深度驱动 模糊/透明度/缩放；点击锁定并转正，hover/回车同样聚焦
+   ───────────────────────────────────────────── */
+.globe-screen {
+  background: #000;
+  /* 上下留白与屏内 gap 放这里而不是 Tailwind 类：窄屏堆叠态要跟着媒体查询收 */
+  padding-block: 3rem;
+  gap: 1.75rem;
+  /* 球体默认形态 ×1.5 后必然溢出这一屏（左侧出血 + 上下被裁）——
+     用 clip 就地裁掉（视觉上等同于被视口裁掉），
+     否则溢出会撑高文档、破坏滚动吸附等距 */
+  overflow: hidden;
+  overflow: clip;
+}
+
+/* 屏底黑幕：与顶部导航黑幕（.site-nav::before）上下呼应，
+   由下而上淡出（#000 100% → #000 0%），
+   把溢出屏底、被 overflow:clip 硬切一刀的卡片「化」进黑色里。
+   用 ::before 而不是 ::after —— .screen::after 已被吸附哨兵占用。
+   z-index:1 = 高于球体卡片（.globe 是 z-index:auto），低于右侧文案（.partners-row 是 2），
+   所以文案永远不会被压暗。
+   基准高度 4rem：窄屏堆叠态文案离屏底只有 ~71px，再高就会压到正文上；
+   桌面态卡片实际溢出 19~154px，在 ≥1280 加高到 7rem（与导航黑幕等高）。 */
+.globe-screen::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4rem;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(to top, #000 0%, rgba(0, 0, 0, 0) 100%);
+}
+
+.globe {
+  position: relative;
+  width: 100%;
+  /* 堆叠态的槽位高度：与 JS 里的半径系数 0.33 配对（×1.5 后球径 ≈ 0.99h，
+     球正好不越出槽位、不压到下方文案）。断点须与 JS 的 NARROW 一致：1280px */
+  height: min(72svh, 620px);
+  --r: 360px;
+  /* 透视 = 1700 × 默认形态放大倍数（JS 里的 PERSP 同步），改 GLOBE_SCALE 要一起改 */
+  perspective: 2550px;
+  perspective-origin: 50% 50%;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 右侧文案：沿用第 3 屏的三段式（label / display / lede）。
+   块宽必须随视口收放 —— 球体可见右缘 ≈ 24vw + 558px，1280 时与版心之间
+   只剩约 380px 可用，固定宽度必然撞上球体，所以取 clamp(16rem,24vw,28rem)。
+   三段统一 width:100% 再靠 max-width 封顶，左缘才在同一条基线上对齐
+   （flex 子项默认 shrink-to-fit，标题和正文会各按自己的内容宽度收缩）。 */
+.partners-row {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1680px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  /* 「Our Partners」是标题上方的眉标，和标题同属一个语义块 —— 间距收紧到 0.4rem；
+     标题与正文之间仍是 1.35rem（由 .partners-lede 的 margin-top 补足），两块分开 */
+  align-items: center;
+  gap: 0.4rem;
+  text-align: center;
+  /* 这一层是「满屏宽 + z-index:2」的盒子，会把球体中部一整条带的点击全吃掉
+     （实测球心附近 elementFromPoint 命中的是它而不是卡片）。让容器透明穿透、
+     只有真正的文字块收回事件即可。 */
+  pointer-events: none;
+}
+
+/* margin-block:0 是必须的 —— `.label` 是 <p>，浏览器默认给 11px 上下外边距，
+   不清掉的话「眉标→标题」会永远是 gap + 11px，改 gap 看不出效果 */
+.partners-row > * {
+  width: 100%;
+  max-width: clamp(16rem, 24vw, 28rem);
+  pointer-events: auto;
+  margin-block: 0;
+}
+
+.partners-title {
+  margin: 0;
+  line-height: 1.06;
+  font-size: clamp(1.6rem, 2.6vw, 2.6rem);
+}
+
+/* margin-top 与容器 gap 0.4rem 相加 = 标题到正文 1.35rem */
+.partners-lede {
+  margin: 0.95rem 0 0;
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: var(--color-mute);
+}
+
+/* ── 窄屏堆叠态：这一屏必须守住 100svh，否则吸附点不等距。
+      文案从一行标题变成三段后高了约 190px，只能从「球体槽位」和留白里让出来：
+      上下留白 3rem→1.5rem、屏内 gap 1.75rem→1rem。
+      球体槽位另给 flex-shrink（min-height:0）：文案再长也只会压球体、不会撑破这一屏，
+      JS 按 clientHeight 反算半径，所以球径自动跟着槽位缩。
+      用 height:100svh 而不是 min-height，主尺寸才是「确定」的、flex 才会收缩。 ── */
+@media (max-width: 1279.98px) {
+  .globe-screen {
+    height: 100svh;
+    padding-block: 1.5rem;
+    gap: 1rem;
+  }
+
+  .globe {
+    height: min(62svh, 540px);
+    min-height: 0;
+  }
+
+  /* 堆叠态文案独占一行，不必跟着 vw 收窄 */
+  .partners-row > * {
+    max-width: min(32rem, 100%);
+  }
+}
+
+@media (min-width: 1280px) {
+  /* 绝对定位 + margin-left:-26vw ⇒ 球心落在视口 24% 处（padding box 宽度=满屏，
+     所以 -26vw 才是中心 24vw），左侧约 1/3 被裁掉形成出血；桌面态槽位回到 76svh/600 */
+  .globe {
+    position: absolute;
+    left: 0;
+    right: auto;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    height: min(76svh, 600px);
+    margin: auto;
+    margin-left: -26vw;
+  }
+
+  /* 桌面态球体绝对定位，屏内 gap 归零 */
+  .globe-screen {
+    gap: 0;
+  }
+
+  /* 桌面态卡片真的溢出屏底（实测 19~154px），且正文离屏底有 300px 以上余量，
+     黑幕加高到 7rem —— 与顶部导航黑幕等高，上下对称 */
+  .globe-screen::before {
+    height: 7rem;
+  }
+
+  /* 文案整体左移，与球体右缘拉开呼吸（否则贴死版心右缘）。
+     左移量按视口线性给：球体可见右缘 ≈ 24vw + 558px、版心右缘 ≈ 100vw − 32px，
+     两者间距随视口以约 0.62/px 增长（版心 1744px 封顶后仍有 0.26/px），
+     所以左移量取 0.55/px 就能全程维持 ~75px 的稳定呼吸，不会撞上球体。
+     宽端封顶 17.5rem：1920 以上版心停止增长，继续左移反而会再次贴向球体。 */
+  .partners-row {
+    align-items: flex-end;
+    text-align: left;
+    padding-right: clamp(0px, calc((100vw - 1240px) * 0.55), 17.5rem);
+  }
+}
+
+.globe:focus-visible {
+  outline: 1px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 0.5rem;
+  border-radius: 1rem;
+}
+
+.globe.dragging {
+  cursor: grabbing;
+}
+
+/* 球心一团冷光，把球体从纯黑里托出来 */
+.globe::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(44rem, 92%);
+  height: min(44rem, 92%);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(2.6rem);
+  background: radial-gradient(
+    closest-side,
+    rgba(27, 81, 189, 0.34),
+    transparent 70%
+  );
+}
+
+.globe-spin {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+}
+
+.globe-item {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--iw, 110px);
+  height: var(--ih, 56px);
+  margin-top: calc(var(--ih, 56px) / -2);
+  margin-left: calc(var(--iw, 110px) / -2);
+  border-radius: 0.55rem;
+  overflow: hidden;
+  /* 不再隐藏 backface：球背面的卡片同样参与画面，球面才显得铺满 */
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  /* ⚠ 卡片上不要用带模糊的 box-shadow：模糊会把图层的绘制边界撑大，
+     Chrome 据此下调该层的栅格化比例，聚焦放大后的卡片会被低分辨率纹理拉伸变糊
+     （实测：2.4rem 模糊时清晰度只剩 31%，1rem 时桌面 100% / iPad 仍有 35%，
+     完全不带模糊才是各视口都稳的 103%）。黑底上黑阴影本来也几乎看不见。 */
+  box-shadow: none;
+  /* 只提示 transform：84 张卡同时提升 filter/opacity 会造出几十个合成层，反而更卡 */
+  will-change: transform;
+}
+
+/* 内容层：球背面的卡片是镜像投影，翻回来保证 logo 正读 */
+.globe-item .gi-in {
+  position: absolute;
+  inset: 0;
+}
+
+.globe-item.flip .gi-in {
+  transform: scaleX(-1);
+}
+
+.globe-item img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+}
+
+/* 默认 white 版；hover / 点击锁定后彩色版淡入。
+   未激活时用 visibility:hidden —— 84 张彩色层不参与绘制，省掉一半光栅化 */
+.globe-item .gi-color {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.4s ease,
+    visibility 0s linear 0.4s;
+}
+
+.globe-item:hover .gi-color,
+.globe-item.is-active .gi-color {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 0.4s ease,
+    visibility 0s;
+}
+
+.globe-item:hover {
+  border-color: rgba(255, 255, 255, 0.42);
+}
+
+.globe-item.is-active {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.09);
+  /* 只用无模糊的描边环做「聚焦」：0 模糊不会撑大图层边界，锐度不受影响 */
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+

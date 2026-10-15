@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+.DS_Store
+Thumbs.db
+
+# 本地验证截图（临时产物，不入仓库）
+outputs/
+# WorkBuddy 工作记忆（本地约定与日志）
+.workbuddy/
+# Next 的空脚手架目录
+taste-design/tmp/
