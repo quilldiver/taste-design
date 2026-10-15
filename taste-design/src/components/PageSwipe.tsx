@@ -61,6 +61,11 @@ export default function PageSwipe({ children }: { children: React.ReactNode }) {
   const dir = useRef(1);
   const busy = useRef(false);
 
+  /* 「我们」三屏长页面会把竖滚动条常驻显示，这里按需隐藏外观；作品页只有一屏不需要 */
+  useEffect(() => {
+    document.documentElement.classList.toggle("no-bars", tail(pathname) === "/");
+  }, [pathname]);
+
   /* 路由变了 ⇒ 新页面从侧面滑进来（离开动画在点击时已经播完） */
   useEffect(() => {
     if (prev.current === pathname) return;

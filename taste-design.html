@@ -38,6 +38,10 @@
 *,*::before,*::after{box-sizing:border-box}
 /* mandatory：任何幅度滚动松手后都吸附到最近的一屏（proximity 轻扫不吸附） */
 html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;scroll-snap-type:y mandatory}
+/* 「我们」这页是三屏长页面，竖条会一直挂在右侧看着很吵 —— 由 JS 按需挂到 html 上。
+   只隐藏外观：滚轮 / 触控板 / CSS 吸附 / 整屏翻页全部照常。 */
+html.no-bars{scrollbar-width:none;-ms-overflow-style:none}
+html.no-bars::-webkit-scrollbar{width:0;height:0}
 body{
   margin:0; font-family:var(--f-sans); font-size:1rem; line-height:1.65;
   font-weight:400; font-stretch:100%;
@@ -1005,6 +1009,9 @@ void main(){
       if(cards.length) setActive(null);  // 牌堆回到「没选任何一张」的静止形态
       incoming.hidden=false;
       scrollTo({top:0,behavior:'auto'});
+      /* 「我们」是三屏长页面，滚动条会常驻；作品页只有一屏，本来就没有，
+         所以按需挂在 html 上，别全局一刀切 */
+      document.documentElement.classList.toggle('no-bars', r==='studio');
       syncNav();
     };
 

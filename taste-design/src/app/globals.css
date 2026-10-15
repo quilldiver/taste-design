@@ -47,6 +47,17 @@
     scroll-snap-type: y mandatory;
   }
 
+  /* 「我们」是三屏长页面，竖条会一直挂在右侧 —— 由 PageSwipe 按路由挂到 html 上。
+     只隐藏外观：滚轮 / 触控板 / CSS 吸附 / 整屏翻页全部照常。 */
+  html.no-bars {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  html.no-bars::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+
   body {
     font-family: var(--font-sans);
     font-size: 1rem;
