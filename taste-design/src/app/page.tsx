@@ -8,9 +8,9 @@ function HeroScreen() {
   return (
     <section
       id="studio"
-      className="screen relative flex min-h-[100svh] items-center px-5 pb-16 pt-28 sm:px-8 sm:pb-20 sm:pt-32"
+      className="screen relative flex min-h-[100svh] items-center pb-16 pt-28 sm:pb-20 sm:pt-32"
     >
-      <div className="mx-auto grid w-full max-w-[1680px] grid-cols-1 items-center gap-14 lg:grid-cols-[1fr_1.05fr] lg:gap-8">
+      <div className="mx-auto grid w-full max-w-[1680px] grid-cols-1 items-center gap-14 px-[clamp(1rem,4.5vw,2rem)] lg:grid-cols-[1fr_1.05fr] lg:gap-8">
         {/* 左：工作室介绍 */}
         <div className="order-1 lg:pr-6">
           <p className="label">Creative Studio — Since {STUDIO.since}</p>
@@ -58,11 +58,13 @@ function GlobeScreen() {
   return (
     <section
       id="clients"
-      className="screen globe-screen relative flex min-h-[100svh] flex-col items-center justify-center overflow-clip px-5 sm:px-8 xl:flex-row xl:justify-end"
+      className="screen globe-screen relative flex min-h-[100svh] flex-col items-center justify-center overflow-clip xl:flex-row xl:justify-end"
     >
       <GlobeGallery />
-      {/* 三段式与第 3 屏一致：label / display / lede */}
-      <div className="partners-row">
+      {/* 三段式与第 3 屏一致：label / display / lede。
+          外层容器与其它屏的版心同构（同一 max-width + 同一 padding），
+          左右缘才与导航 logo / 菜单对齐 */}
+      <div className="partners-row mx-auto w-full max-w-[1680px] px-[clamp(1rem,4.5vw,2rem)]">
         <p className="label">Our Partners</p>
         <h2 className="display partners-title">一起出品的伙伴</h2>
         <p className="partners-lede">
@@ -78,9 +80,9 @@ function ContactScreen() {
   return (
     <section
       id="contact"
-      className="screen relative flex min-h-[100svh] items-center px-5 py-28 sm:px-8"
+      className="screen relative flex min-h-[100svh] items-center py-28"
     >
-      <div className="mx-auto w-full max-w-[1680px]">
+      <div className="mx-auto w-full max-w-[1680px] px-[clamp(1rem,4.5vw,2rem)]">
         <p className="label">Say Hello</p>
 
         <h2 className="display mt-5 max-w-[22ch] text-[clamp(2.2rem,5.6vw,4.6rem)]">

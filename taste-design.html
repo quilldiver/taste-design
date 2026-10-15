@@ -31,8 +31,14 @@
   --f-sans:var(--f-en);
   --f-mono:var(--f-en);
 
-  --pad:clamp(1.25rem,4vw,2rem);
-  --maxw:1680px;
+  /* 全站唯一的横向留白：既是版心左右缩进，也是导航 .nav-in 的左右内边距 ——
+     两者共用同一个值，版心左缘才和 logo（.brand-mark）左缘落在同一条竖线上。
+     ≥711px 恒为 32px，手机端按 4.5vw 收到 16px 下限 */
+  --pad:clamp(1rem,4.5vw,2rem);
+  --maxw:1680px;   /* 版心盒子宽度上限（含自身 padding） */
+  /* 视口超过 1680 后盒子居中会多出每一侧 (vw−1680)/2 的空白 —— 这一段额外缩进
+     同样封顶在 --pad：名称 wide-inset，用于抵掉那些「按旧版心右缘算过」的偏移 */
+  --wide-inset:min(var(--pad),max(0px,(100vw - var(--maxw)) / 2));
 }
 
 *,*::before,*::after{box-sizing:border-box}
@@ -87,8 +93,10 @@ body{
   opacity:0;transition:opacity .45s ease;
   background:linear-gradient(to bottom,#000 0%,rgba(0,0,0,0) 100%)}
 .nav.shade::before{opacity:1}
-/* 左右留 32px 呼吸；≤711px 时按 4.5vw 自动收，否则 360/320 会把「作品」挤出屏幕 */
-.nav-in{max-width:var(--maxw);margin:0 auto;padding:1rem clamp(1rem,4.5vw,2rem);
+/* 留白放在「店门」内侧：盒子按 --maxw 居中，缩进用全站统一的 --pad。
+   版心 .wrap 用同一套（同样 max-width + 同样 padding-inline）⇒ logo 左缘 = 版心左缘。
+   ≤711px 时按 4.5vw 自动收，否则 360/320 会把「作品」挤出屏幕 */
+.nav-in{max-width:var(--maxw);margin:0 auto;padding:1rem var(--pad);
   display:flex;align-items:center;justify-content:space-between;gap:1rem}
 /* 品牌：logo 定死 48px；中文 18px / 90% 白，英文 12px / 50% 白 */
 .brand{display:flex;align-items:center;gap:.65rem;text-decoration:none;color:var(--ink)}
@@ -127,9 +135,12 @@ body{
 /* ── 版心 ── */
 /* 换页滑动时旧页会被推出视口边界，clip 掉这点溢出，避免横向出现可滚 range */
 main{position:relative;z-index:1;overflow-x:clip}
-.wrap{max-width:var(--maxw);margin:0 auto;width:100%}
+/* 与 .nav-in 完全同构：同样的盒子宽度上限 + 同样的左右内边距。
+   当初留白写在 .screen 上（外层），1680 封顶后「外层缩进 + 内层居中」会让版心左缘
+   比 logo 多缩进 32px；把留白挪进盒子后，两者左缘才严格重合（盒子边距 + padding 一致）。 */
+.wrap{max-width:var(--maxw);margin:0 auto;width:100%;padding-inline:var(--pad)}
 /* 每一屏都是一个吸附点；scroll-snap-stop 保证快速滑动也不会跳屏 */
-.screen{position:relative;padding-inline:var(--pad);
+.screen{position:relative;
   scroll-snap-align:start;scroll-snap-stop:always}
 /* 屏尾补一个吸附点：某屏内容超过一屏时，mandatory 也能停在它的底部，
    不会把中段内容锁死（1px 绝对定位哨兵，不影响布局） */
@@ -301,7 +312,10 @@ main{position:relative;z-index:1;overflow-x:clip}
      所以左移量取 0.55/px 就能全程维持 ~75px 的稳定呼吸，不会撞上球体。
      宽端封顶 17.5rem：1920 以上版心停止增长，继续左移反而会再次贴向球体。 */
   .partners-row{align-items:flex-end;text-align:left;
-    padding-right:clamp(0px,calc((100vw - 1240px) * .55),17.5rem)}
+    /* 这条规则会整体替掉 .wrap 的 padding-right（不是叠加），所以要把版心那 32px
+       加回来：+var(--pad) -var(--wide-inset) 正好等于「旧版心右缘 − 新版心右缘」，
+       减完文案与球体的呼吸量、以及文字右缘的位置与这次对齐改动前完全一致。 */
+    padding-right:max(0px,clamp(0px,calc((100vw - 1240px) * .55),17.5rem) + var(--pad) - var(--wide-inset))}
 }
 .globe.dragging{cursor:grabbing}
 /* 球心一团冷光，把球体从纯黑里托出来 */

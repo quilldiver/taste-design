@@ -8,8 +8,8 @@ export const metadata: Metadata = {
 
 export default function WorksPage() {
   return (
-    <section className="relative flex min-h-[100svh] flex-col justify-center px-5 pt-[clamp(6rem,9svh,7rem)] pb-[clamp(3.5rem,11svh,7.5rem)] sm:px-8 sm:pt-[clamp(6rem,9svh,9rem)]">
-      <div className="mx-auto w-full max-w-[1680px]">
+    <section className="relative flex min-h-[100svh] flex-col justify-center pt-[clamp(6rem,9svh,7rem)] pb-[clamp(3.5rem,11svh,7.5rem)] sm:pt-[clamp(6rem,9svh,9rem)]">
+      <div className="mx-auto w-full max-w-[1680px] px-[clamp(1rem,4.5vw,2rem)]">
         <p className="label">Selected Works</p>
 
         <h1 className="display mt-[clamp(0.5rem,1.6svh,1rem)] text-[clamp(2.2rem,min(6.4vw,6.4svh),4.4rem)]">
