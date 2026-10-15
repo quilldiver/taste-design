@@ -290,11 +290,20 @@
   color: rgba(255, 255, 255, 0.5);
 }
 
-/* CSS 生成的占位"盘面"，无外部资源依赖 */
+/* 盘面：真实作品图铺满，CSS 占位渐变作为图片加载前的兜底 */
 .carousel-plate {
   position: absolute;
   inset: 0;
   overflow: hidden;
+}
+
+.carousel-plate-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .carousel-plate-blob {
@@ -319,6 +328,11 @@
       transparent 76%
     );
   filter: blur(0.45em) saturate(1.2);
+}
+
+/* 真实图片上把颗粒压淡：占位渐变需要它撑质感，照片上 0.5 会显脏 */
+.carousel-face-front .carousel-plate-grain {
+  opacity: 0.22;
 }
 
 .carousel-plate-grain {

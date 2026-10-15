@@ -186,13 +186,17 @@ main{position:relative;z-index:1}
 .face.back{transform:rotateY(180deg)}
 .back-mark{position:relative;z-index:2;padding:1.1em;
   font-family:var(--f-mono);font-size:.72em;letter-spacing:.2em;color:rgba(255,255,255,.5)}
-/* CSS 生成的占位盘面，无外部资源依赖 */
+/* 盘面：真实作品图铺满，CSS 占位渐变为图片加载前的兜底 */
 .plate{position:absolute;inset:0;overflow:hidden}
+.plate-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  display:block;background:none}
 .plate-blob{position:absolute;inset:-22%;filter:blur(.45em) saturate(1.2);
   background:
     radial-gradient(closest-side at 32% 34%,hsl(var(--hue) 84% 58% / .9),transparent 68%),
     radial-gradient(closest-side at 72% 66%,hsl(calc(var(--hue) + 26) 88% 62% / .6),transparent 72%),
     conic-gradient(from calc(var(--i) * 42deg),hsl(var(--hue) 72% 46% / .5),transparent 38%,hsl(calc(var(--hue) - 34) 76% 54% / .42),transparent 76%)}
+/* 真实图片上把颗粒压淡：占位渐变需要它撑质感，照片上 0.5 会显脏 */
+.front .plate-grain{opacity:.22}
 .plate-grain{position:absolute;inset:0;opacity:.5;mix-blend-mode:overlay;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E")}
 .cap{position:relative;z-index:2;display:flex;flex-direction:column;gap:.28em;padding:1.1em 1em 1em;
@@ -693,9 +697,21 @@ void main(){
 
 /* ═══════════════════════════════════════════
    2. 3D 木马 —— 光圈/风车：12 张卡片共轴转开，自转 + 拖拽惯性
-      （换成真实图片/视频时改 PANELS 与 .face.front 内部）
+      盘面用真实作品图（外链 carousel/ 目录，不内嵌 base64），
+      每次加载从 14 张里随机挑 12 张，刷新即换一组
    ═══════════════════════════════════════════ */
 (function(){
+  /* 与 HTML 同级的外链目录；图片规格 1000×1250（4:5），见 .plate-img */
+  var CAROUSEL_DIR='carousel/';
+  var IMAGES=['01','02','03','04','05','06','07','08','09','10','11','12','13','14'];
+  /* Fisher-Yates 洗牌后取前 n 张：保证同一屏不出现重复图 */
+  function pickRandom(arr,n){
+    var a=arr.slice();
+    for(var i=a.length-1;i>0;i--){
+      var j=Math.floor(Math.random()*(i+1)), t=a[i]; a[i]=a[j]; a[j]=t;
+    }
+    return a.slice(0,n);
+  }
   const PANELS=[
     {idx:'001',title:'炉火',type:'BRAND',hue:38},
     {idx:'002',title:'潮汐',type:'WEB',hue:212},
@@ -713,13 +729,17 @@ void main(){
   const root=document.getElementById('carousel');
   root.setAttribute('aria-hidden','true');   // 纯装饰，读屏跳过
   root.style.setProperty('--theta',(360/PANELS.length)+'deg');
+  const picks=pickRandom(IMAGES, PANELS.length);
   root.innerHTML =
     '<div class="tilt"><div class="fan">' +
     PANELS.map((p,i)=>`
       <figure class="card" style="--i:${i};--hue:${p.hue}">
         <div class="face front">
           <div class="plate" aria-hidden="true">
-            <span class="plate-blob"></span><span class="plate-grain"></span>
+            <span class="plate-blob"></span>
+            <img class="plate-img" src="${CAROUSEL_DIR}3dcarousel_${picks[i]}.webp"
+                 alt="" decoding="async" draggable="false">
+            <span class="plate-grain"></span>
           </div>
           <figcaption class="cap">
             <span class="idx">${p.idx}</span>
@@ -728,9 +748,7 @@ void main(){
           </figcaption>
         </div>
         <div class="face back" aria-hidden="true">
-          <div class="plate" aria-hidden="true">
-            <span class="plate-blob"></span><span class="plate-grain"></span>
-          </div>
+          <div class="plate" aria-hidden="true"></div>
           <span class="back-mark">${p.idx} — TASTE DESIGN</span>
         </div>
       </figure>`).join('') +

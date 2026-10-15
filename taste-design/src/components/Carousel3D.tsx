@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { BASE } from "@/lib/site";
 
 /**
  * 3D 作品旋转木马 —— 光圈 / 风车结构
@@ -13,13 +14,39 @@ import { cn } from "@/lib/utils";
  *   叠成"光圈 / 翻开的书页"般的星形，再由 JS 驱动绕轴匀速自转。
  *
  * 注意不是圆柱：卡片没有 translateZ，全部叠在同一根轴上。
- * 正反两面共用同一套材质（底色渐变 + 盘面 + 颗粒 + 边框），仅朝向不同。
+ *
+ * 正面是真实作品图（外链 public/carousel/，图片规格 1000×1250 即 4:5），
+ * 每次加载从 14 张里随机挑 12 张 —— 刷新即换一组，同屏不重复。
+ * 背面是实色深底（与参考站一致），不贴图。
  *
  * 交互：匀速自转 + 指针拖拽甩动（带惯性回落）；尊重 prefers-reduced-motion。
- *
- * 当前面板是 CSS 生成的占位视觉（无外部资源依赖），
- * 之后换成真实图片/视频时，只需替换 PANELS 与 .carousel-face-front 内部。
  */
+
+/**
+ * 盘面图后缀（文件名 3dcarousel_xx.webp）。
+ * 图片放在 public/carousel/ 下（Next 不处理 public 内资源的 basePath，
+ * 所以 <img src> 必须自己拼 BASE，见下）。
+ */
+const IMAGES = [
+  "01", "02", "03", "04", "05", "06", "07",
+  "08", "09", "10", "11", "12", "13", "14",
+];
+
+/** Fisher-Yates 洗牌后取前 n 张 */
+function pickRandom(arr: readonly string[], n: number) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a.slice(0, n);
+}
+
+/**
+ * SSR / 静态导出时没有 window，用 useEffect 兜底避免 React 警告。
+ * 客户端走 useLayoutEffect：在首帧绘制前就把随机结果写进去，看不到闪换。
+ */
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 export type Panel = {
   id: string;
@@ -55,6 +82,13 @@ const SENS = 1.1;
 export default function Carousel3D({ className }: { className?: string }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const fanRef = useRef<HTMLDivElement>(null);
+
+  /* 初始 = 前 N 张确定性顺序：SSR / 无 JS 时也有图可看；
+     hydration 后立刻换成随机的一组（绘制前完成，无闪烁） */
+  const [picks, setPicks] = useState<string[]>(() => IMAGES.slice(0, COUNT));
+  useIsoLayoutEffect(() => {
+    setPicks(pickRandom(IMAGES, COUNT));
+  }, []);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -207,6 +241,13 @@ export default function Carousel3D({ className }: { className?: string }) {
               <div className="carousel-face carousel-face-front">
                 <div className="carousel-plate" aria-hidden="true">
                   <span className="carousel-plate-blob" />
+                  <img
+                    className="carousel-plate-img"
+                    src={`${BASE}/carousel/3dcarousel_${picks[i] ?? IMAGES[i]}.webp`}
+                    alt=""
+                    decoding="async"
+                    draggable={false}
+                  />
                   <span className="carousel-plate-grain" />
                 </div>
                 <figcaption className="carousel-caption">
@@ -216,10 +257,7 @@ export default function Carousel3D({ className }: { className?: string }) {
                 </figcaption>
               </div>
               <div className="carousel-face carousel-face-back" aria-hidden="true">
-                <div className="carousel-plate" aria-hidden="true">
-                  <span className="carousel-plate-blob" />
-                  <span className="carousel-plate-grain" />
-                </div>
+                <div className="carousel-plate" aria-hidden="true" />
                 <span className="carousel-back-mark">
                   {p.index} — TASTE DESIGN
                 </span>
