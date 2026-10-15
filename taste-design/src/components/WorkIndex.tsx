@@ -400,7 +400,7 @@ export function WorkIndex({ slug }: { slug: string }) {
         )}
 
         {/* ── 图片流：全部作品首尾相接，滚到底就是下一个作品 ──
-            外面这层 wrap 只为托住覆盖层（Liquid Scroll 渐进模糊 + 滚动黑渐变）。
+            外面这层 wrap 只为托住上带（Liquid Scroll 渐进模糊 + 滚动黑渐变）。
             ⚠ 覆盖层必须在**滚动容器外面**，否则会跟着内容一起滚走。 */}
         <div className={cn("wd-feed-wrap", scrolled && "is-scrolled")}>
           <div
@@ -414,7 +414,7 @@ export function WorkIndex({ slug }: { slug: string }) {
           >
             <div className="wd-feed-in">{feed}</div>
           </div>
-          {/* 6 层模糊 + 1 层黑渐变；层参数全在 globals.css 的 .wd-lq 段落里 */}
+          {/* 上带：6 层模糊 + 1 层黑渐变；层参数全在 globals.css 的 .wd-lq 段落里 */}
           <div className="wd-lq" aria-hidden="true">
             <div className="wd-lq-band wd-lq-t">
               <span />
@@ -425,15 +425,20 @@ export function WorkIndex({ slug }: { slug: string }) {
               <span />
               <span className="wd-lq-tint" />
             </div>
-            <div className="wd-lq-band wd-lq-b">
-              <span />
-              <span />
-              <span />
-              <span />
-              <span />
-              <span />
-            </div>
           </div>
+        </div>
+      </div>
+      {/* ── 下带：挂在页面级（在 .wd-in 版心之外）──
+          所以它横跨整个视口、压在三栏所有内容之上，而不是只糊图片那一列。
+          常驻（不随 .is-scrolled 切换）：视口底部永远还有内容。 */}
+      <div className="wd-lq-bot" aria-hidden="true">
+        <div className="wd-lq-band wd-lq-b">
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
         </div>
       </div>
     </div>

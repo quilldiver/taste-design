@@ -1159,7 +1159,11 @@
   }
 }
 
+/* ⚠ position: relative 是必需的，不是装饰：页面级那层 Liquid Scroll（.wd-lq-bot）挂在
+   这里，靠它把 absolute/inset:0 锚在「整整一屏」上。不加的话会一路往上找到 main
+   （main 也是 relative），bottom:0 就落到整份文档的最末尾——那是几千 px 之下。 */
 .wdetail {
+  position: relative;
   display: flex;
   align-items: stretch;
   height: 100svh;
@@ -1443,9 +1447,10 @@
 }
 
 /* ── 右：图片流 ──
-   结构：.wd-feed-wrap（定尺寸 + 定位上下文）> .wd-feed（滚动容器）+ .wd-lq（覆盖层）。
+   结构：.wd-feed-wrap（定尺寸 + 定位上下文）> .wd-feed（滚动容器）+ .wd-lq（上带）。
    ⚠ 覆盖层必须放在**滚动容器外面**：放里面会跟着内容一起滚走；改用 sticky 又会占掉
-   一份文档流高度。外面这层 relative 就是为它准备的，absolute inset:0 精确盖住整块。 */
+   一份文档流高度。外面这层 relative 就是为它准备的，absolute inset:0 精确盖住整块。
+   （下带 .wd-lq-bot 不在这儿 —— 它挂在 .wdetail 一级，见下面 Liquid Scroll 那段。） */
 .wd-feed-wrap {
   position: relative;
   flex: 1 1 auto;
@@ -1469,25 +1474,39 @@
   height: 0;
 }
 
-/* ── Liquid Scroll：图片流上下边缘的渐进模糊（只在这一页）──
+/* ── Liquid Scroll：渐进模糊（只在这一页）──
    浏览器没有「渐变 blur」，所以用 6 层 backdrop-filter 叠出来：每层的 blur 是固定的
    （层号越大越轻），靠 mask 决定它**从边缘起能活多久** —— 最糊那层只覆盖最外面
    30%，最轻那层一直铺到带底。叠加后就是边缘最糊、向内连续变清、没有台阶。
    ⚠ 每层 blur 必须**递减**：backdrop-filter 是串联的（后一层模糊的是前一层的输出），
    等强叠 6 层会把模糊度乘成 √6 倍，边缘直接糊成一块死色。
-   ⚠ 动这里的层数 / 数值后要重新截图确认「看不到台阶」。 */
+   ⚠ 动这里的层数 / 数值后要重新截图确认「看不到台阶」。
+
+   上下两带的**挂载层级不同**（用户指定）：
+   · 上带 .wd-lq 挂在 .wd-feed-wrap 里 → 只盖图片列。它表达的是「内容从上方卷出去」
+     这个图片流自己的语义，且静止时本就不可见，没必要铺满整屏。
+   · 下带 .wd-lq-bot 挂在 .wdetail 下 → **横跨整个视口、压在三栏所有内容之上**。
+     表达的是「整页的底边渐隐」：视口底部永远还有内容，所以常驻。
+   两条带的层参数完全共用（都吃 .wd-lq-band 那套），只是容器不同。 */
 .wd-lq {
   position: absolute;
   inset: 0;
   z-index: 3;
   pointer-events: none;
-  --wd-lq-h: clamp(56px, 8vh, 100px);
 }
+.wd-lq-bot {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+/* 带高定义在带自己身上 ⇒ 两个容器谁都不必重复声明 */
 .wd-lq-band {
   position: absolute;
   left: 0;
   right: 0;
   height: var(--wd-lq-h);
+  --wd-lq-h: clamp(56px, 8vh, 100px);
 }
 .wd-lq-t {
   top: 0;
