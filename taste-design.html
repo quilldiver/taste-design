@@ -83,7 +83,8 @@ body{
   opacity:0;transition:opacity .45s ease;
   background:linear-gradient(to bottom,#000 0%,rgba(0,0,0,0) 100%)}
 .nav.shade::before{opacity:1}
-.nav-in{max-width:var(--maxw);margin:0 auto;padding:1rem 0;   /* 左右不留边：品牌与菜单顶到视口两侧 */
+/* 左右留 32px 呼吸；≤711px 时按 4.5vw 自动收，否则 360/320 会把「作品」挤出屏幕 */
+.nav-in{max-width:var(--maxw);margin:0 auto;padding:1rem clamp(1rem,4.5vw,2rem);
   display:flex;align-items:center;justify-content:space-between;gap:1rem}
 /* 品牌：logo 定死 48px；中文 18px / 90% 白，英文 12px / 50% 白 */
 .brand{display:flex;align-items:center;gap:.65rem;text-decoration:none;color:var(--ink)}
@@ -107,6 +108,14 @@ body{
   border-radius:3px;text-decoration:none;color:var(--ink);
   color:var(--mute);transition:color .2s ease}
 .menu a:hover,.menu a[aria-current="page"]{color:var(--ink)}
+/* ⚠ 下面两条必须排在 .brand-txt / .menu a 之后：同权重时媒体查询靠前的会被后面的普通规则盖掉 */
+/* 极窄屏收紧：品牌和菜单的最小宽度加起来已接近一整屏 */
+@media (max-width:479.98px){
+  .nav-in{gap:.5rem}
+  .menu a{padding:.5rem .375rem}
+}
+/* 320 这一档连品牌文字都放不下，只留图形 logo */
+@media (max-width:359.98px){ .brand-txt{display:none} }
 .menu .stack{display:flex;flex-direction:column;line-height:1}
 .menu .en{font-family:var(--f-mono);font-size:.65rem;letter-spacing:.24em;color:var(--mute)}
 .menu .cn{margin-top:.35rem;font-size:.95rem}

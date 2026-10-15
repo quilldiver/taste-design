@@ -56,8 +56,8 @@ export default function SiteNav() {
       data-shade={shade}
       className="site-nav fixed inset-x-0 top-0 z-50"
     >
-      {/* 左右不留边：品牌与菜单顶到视口两侧 */}
-      <div className="mx-auto flex max-w-[1680px] items-center justify-between px-0 py-4 sm:px-0 sm:py-6">
+      {/* 左右留 32px 呼吸；≤711px 按 4.5vw 自动收，否则 360/320 会把「作品」挤出屏幕 */}
+      <div className="mx-auto flex max-w-[1680px] items-center justify-between gap-4 px-[clamp(1rem,4.5vw,2rem)] py-4 sm:py-6">
         <SwipeLink
           href="/"
           className="group flex items-center gap-[0.65rem] no-underline"
@@ -69,7 +69,7 @@ export default function SiteNav() {
           </span>
           <span
             data-in={textIn}
-            className="brand-txt flex flex-col justify-center gap-[0.12rem] overflow-hidden py-[0.1em]"
+            className="brand-txt flex flex-col justify-center gap-[0.12rem] overflow-hidden py-[0.1em] max-[359px]:hidden"
           >
             {/* 英文副标：12px / 辅助档 50% 白 */}
             <span className="whitespace-nowrap font-display text-[12px] font-semibold leading-[1.3] tracking-[0.04em] text-mute">
@@ -83,7 +83,7 @@ export default function SiteNav() {
         </SwipeLink>
 
         <nav aria-label="主导航">
-          <ul className="flex items-center gap-1 sm:gap-3">
+          <ul className="flex items-center gap-1 max-[479px]:gap-0 sm:gap-3">
             {NAV.map((item) => {
               const active =
                 item.href === "/"
@@ -96,7 +96,7 @@ export default function SiteNav() {
                     href={item.href}
                     aria-current={active ? "page" : undefined}
                     className={[
-                      "flex min-h-[44px] items-center rounded-sm px-3 py-2 transition-colors duration-200 sm:px-4",
+                      "flex min-h-[44px] items-center rounded-sm px-3 py-2 transition-colors duration-200 max-[479px]:px-1.5 sm:px-4",
                       active ? "text-ink" : "text-mute hover:text-ink",
                     ].join(" ")}
                   >
