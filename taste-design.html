@@ -405,6 +405,15 @@ main{position:relative;z-index:1;overflow-x:clip}
 @media (min-width:1024px){.contact .meta{grid-template-columns:repeat(4,1fr)}}
 .contact a{color:var(--ink);text-decoration:none;transition:color .2s ease}
 .contact a:hover{color:var(--ember);text-decoration:underline;text-underline-offset:4px}
+/* 第 3 屏 meta 里的**正文**（dd）：鼠标悬浮放大 1.5 倍。
+   dd 是块级元素、默认占满整列 —— 补 width:fit-content 把盒子收到文字宽度，
+   悬浮热区才等于「文字本身」；否则鼠标划过列内空白（1920 下文字只占半列）也会触发。
+   transform-origin:left center 让文字左缘（与 dt 对齐的那条竖线）保持不动、向右长出去。
+   transition 沿用作品页选中项那套 --wd-pop（.4s 同一条贝塞尔曲线），全站同一手感。
+   缩放不参与布局 ⇒ 不会把后面的列推开；只在最窄档位会短暂压到邻列文字（见 README）。 */
+.contact .meta dd{width:fit-content;transform-origin:left center;
+  transition:transform var(--wd-pop)}
+.contact .meta dd:hover{transform:scale(1.5)}
 footer{margin-top:6rem;display:flex;flex-direction:column;gap:.75rem}
 @media (min-width:640px){footer{flex-direction:row;align-items:center;justify-content:space-between}}
 footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;color:var(--mute)}

@@ -72,7 +72,15 @@ taste-design/              Next.js 交付版（源码）
   > ⚠️ 淡入**不能写成 `.wd-lq-t { opacity: … }`**：`opacity < 1` 会把该元素变成 backdrop root，子孙的 `backdrop-filter` 就只采样它自己（空内容），模糊整体失效。所以让每个 `span` 自己 `transition: opacity`（实测 `opacity:.5` 时边缘能量 5.1，介于「全模糊 3.4」与「无模糊 11.0」之间，证明模糊仍在工作）。
   > 性能：真实 GPU 下 12 层 backdrop-filter 对滚动帧率**无可测影响**（Apple M5 无头 Metal 后端，开 / 关都是稳定 60fps）。软件光栅（SwiftShader）下才会掉到 30fps —— 那是无头沙箱的假象，不代表真机。`opacity:0` 的层浏览器会跳过绘制，所以静止时更省。
 
-## 四、本地开发
+## 四、首页第 3 屏：联系方式 meta 的「正文」悬浮放大
+
+- **鼠标悬浮到正文（`dd`）上放大 1.5 倍**：`transform: scale(1.5)` + `transition: transform var(--wd-pop)`，与作品索引页选中项同一套时长 / 缓动。**只作用于第 3 屏**，第 1 屏那个 `<dl class="meta">` 不动。
+- **`transform-origin: left center`**：文字左缘（与上面的 `dt` 标签对齐的那条竖线）保持不动，向右长出去；缩放不参与布局，后面的列不会被推开。
+- **`width: fit-content` 是必须的**：`dd` 是块级元素、默认占满整列 —— 1920 下文字只占约半列，不收窄的话鼠标划过列内空白也会触发放大。收成文字宽之后，悬浮热区才等于文字本身。
+  > Next 版这一屏是 Tailwind 工具类写的、没有 `.meta` 类名，所以 `globals.css` 里用 `#contact dd` 反查同一套规则。
+- ⚠️ **640 ~ 1100px 区间放大后会压到邻列文字**：最长的正文是 `hello@tastedesign.studio`（15.2px 下 178px），×1.5 = 267px，而这一区间的列宽只有 170 ~ 216px。广视口没问题（1920 / 1440 下净距还有 145 / 85px），收窄后 1024 下 −19px、760 下 −24px、640 下 −57px。要消掉就在 `max-width: 1100px` 以下收一档（与作品索引页窄屏同样收到的 1.15）。
+
+## 五、本地开发
 
 ```bash
 cd taste-design
@@ -82,7 +90,7 @@ npm run build      # 静态导出到 out/（output: "export"）
 npm run typecheck  # tsc --noEmit
 ```
 
-## 五、部署相关的几个约定
+## 六、部署相关的几个约定
 
 - **静态导出**：`next.config.ts` 里 `output: "export"` + `trailingSlash: true`，站点没有任何服务端依赖。
   `/works/[slug]` 用 `generateStaticParams()` 在构建期列出 7 个分类。
@@ -93,7 +101,7 @@ npm run typecheck  # tsc --noEmit
   子路径部署会 404。放进 `src/fonts/` 后会被输出到 `/_next/static/media/` 下，前缀自动生效。
 - `public/.nojekyll`：防止 `_next` 这类下划线目录被 Jekyll 跳过。
 
-## 六、素材
+## 七、素材
 
 `logo/`、`carousel/`、`works/` 是三个真源，`taste-design/public/` 与 `assets/` 下各有一份同步副本。
 
