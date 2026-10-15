@@ -436,6 +436,9 @@
   align-items: stretch;
   /* 上下留白同样跟窗口高度收放，矮屏优先把空间让给卡片 */
   padding-block: clamp(1rem, 4svh, 2.5rem) clamp(1.25rem, 5svh, 3rem);
+  /* ⚠ margin 必须显式归零：<ul> 的 UA/框架默认块间距（实测 56px）会混入
+     标题与牌堆之间，让整页内容变高、牌堆被顶离画面中心 */
+  margin: 0;
   list-style: none;
 }
 
