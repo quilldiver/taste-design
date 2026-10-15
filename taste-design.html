@@ -353,20 +353,26 @@ footer{margin-top:6rem;display:flex;flex-direction:column;gap:.75rem}
 footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;color:var(--mute)}
 
 /* ── 作品页 ── */
-.works-page{min-height:100svh;padding-block:8rem 7rem}
-.works-page h1{margin:1.25rem 0 0;font-size:clamp(2.6rem,6.4vw,5.2rem)}
+.works-page{min-height:100svh;
+  /* 上下留白跟窗口高度收放：矮窗口把空间让给牌堆（下限保证不被固定导航压住） */
+  padding-block:clamp(6.5rem,12svh,8rem) clamp(3rem,9svh,7rem)}
+.works-page h1{margin:clamp(.75rem,2svh,1.25rem) 0 0;font-size:clamp(2.2rem,min(6.4vw,8svh),5.2rem)}
 .works-page h1 .sub{margin-top:.5rem;display:block;font-size:.4em;letter-spacing:.06em;color:var(--mute)}
 /* ── 作品页：Deckshift 式重叠牌堆 ──
    静止：七张卡横向叠放、各自带一点固定倾斜，像一副没理齐的牌；
    悬停 / 聚焦 / 点击某一张 ⇒ 它浮起当主角，两侧按距离被弹簧推开再小幅回弹；
    <1024px 还原成干净的单列列表。 */
-.deck{--cw:clamp(178px,16.5vw,258px);            /* 卡片宽 */
-  /* 相邻重叠量 ≈ 0.42 卡宽（原 0.53 太挤）；推开距离同步收窄，
-     否则静止态一分散，展开后就会顶出版心（1024 版心只有 960，余量最紧） */
-  --ov:clamp(75px,6.9vw,108px);
-  --push:clamp(20px,2.2vw,42px);
+.deck{
+  /* 卡片高度 = min(视口宽驱动, 视口高驱动)：窗口拉矮时整叠牌等比缩小，
+     不会顶出屏幕；宽度换算保持原值（24.75vw = 原 16.5vw × 1.5） */
+  --cardH:clamp(230px,min(24.75vw,47svh),387px);
+  --cw:calc(var(--cardH) * 2 / 3);                 /* 卡片宽（2:3 与素材同比例） */
+  --ov:clamp(58px,calc(var(--cw) * .42),108px);    /* 相邻重叠 ≈0.42 卡宽 */
+  --push:clamp(16px,calc(var(--cw) * .133),42px);  /* 每推开一格的位移 */
   display:flex;justify-content:center;align-items:stretch;
-  padding-block:2.5rem 3rem;margin:0;list-style:none}
+  /* 上下留白同样跟窗口高度收放，矮屏优先把空间让给卡片 */
+  padding-block:clamp(1rem,4svh,2.5rem) clamp(1.25rem,5svh,3rem);
+  margin:0;list-style:none}
 .deck-cell{position:relative;min-width:0}
 .deck-cell + .deck-cell{margin-left:calc(-1 * var(--ov))}
 .deck-card{position:relative;width:var(--cw);aspect-ratio:2 / 3;

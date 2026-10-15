@@ -425,15 +425,17 @@
    <1024px 还原成干净的单列列表。
    ───────────────────────────────────────────── */
 .deck {
-  --cw: clamp(178px, 16.5vw, 258px); /* 卡片宽 */
-  /* 相邻重叠量 ≈ 0.42 卡宽（原 0.53 太挤）；推开距离同步收窄，
-     否则静止态一分散，展开后就顶出版心（1024 版心只有 960，余量最紧） */
-  --ov: clamp(75px, 6.9vw, 108px);
-  --push: clamp(20px, 2.2vw, 42px);
+  /* 卡片高度 = min(视口宽驱动, 视口高驱动)：窗口拉矮时整叠牌等比缩小，
+     不会顶出屏幕；宽度换算保持原值（24.75vw = 原 16.5vw × 1.5） */
+  --cardH: clamp(230px, min(24.75vw, 47svh), 387px);
+  --cw: calc(var(--cardH) * 2 / 3); /* 卡片宽（2:3 与素材同比例） */
+  --ov: clamp(58px, calc(var(--cw) * 0.42), 108px); /* 相邻重叠 ≈0.42 卡宽 */
+  --push: clamp(16px, calc(var(--cw) * 0.133), 42px); /* 每推开一格的位移 */
   display: flex;
   justify-content: center;
   align-items: stretch;
-  padding-block: 2.5rem 3rem;
+  /* 上下留白同样跟窗口高度收放，矮屏优先把空间让给卡片 */
+  padding-block: clamp(1rem, 4svh, 2.5rem) clamp(1.25rem, 5svh, 3rem);
   list-style: none;
 }
 
