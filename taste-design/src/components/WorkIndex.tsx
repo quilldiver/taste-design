@@ -53,6 +53,19 @@ export function WorkIndex({ slug }: { slug: string }) {
   const [scrolled, setScrolled] = useState(false);
   /** 只用来在「字体替换完 / 首帧排版完成」后再触发一次菜单归位 */
   const [tick, setTick] = useState(0);
+  /**
+   * 三级列表切换的过渡方向：往下浏览（workIdx 变大）⇒ 新内容从**下方**滑上来
+   * （`--wd-l3-dy` 取正值）；往上浏览则反过来。读起来就是「列表跟着上下滚动」。
+   * ⚠ 在渲染期「比较上一次渲染的值并 setState」是 React 官方给的写法、不是副作用：
+   *   它会在同一次渲染里立刻重渲一次，保证下面渲染 li 时方向已经是新值 ——
+   *   换成 useEffect 就要慢一帧，动画的起始位移会反。
+   */
+  const [l3Dir, setL3Dir] = useState<1 | -1>(1);
+  const [prevIdx, setPrevIdx] = useState(workIdx);
+  if (workIdx !== prevIdx) {
+    setL3Dir(workIdx > prevIdx ? 1 : -1);
+    setPrevIdx(workIdx);
+  }
 
   const navRef = useRef<HTMLDivElement | null>(null);
   const l1Ref = useRef<HTMLOListElement | null>(null);
@@ -401,9 +414,13 @@ export function WorkIndex({ slug }: { slug: string }) {
         {/* ── 三级 ── */}
         {l3.length > 0 && (
           <nav className="wd-list" aria-label="作品">
-            <ol className="wd-l3" ref={l3Ref}>
-              {l3.map((i) => (
-                <li key={WORKS[i].id}>
+            {/* data-dir 只负责切方向变量（--wd-l3-dy）；逐条错峰由内联 animation-delay 给。
+                切组时 li 的 key（作品 id，全局唯一）全变 ⇒ React 卸载旧的、挂载新的
+                ⇒ 新 li 一挂载就播 CSS 动画；同组内点不同作品 key 不变、不重挂载、
+                也就不播 —— 正是「只在切组时过渡」所要的。 */}
+            <ol className="wd-l3" data-dir={l3Dir > 0 ? "down" : "up"} ref={l3Ref}>
+              {l3.map((i, k) => (
+                <li key={WORKS[i].id} style={{ animationDelay: `${k * 38}ms` }}>
                   <button
                     type="button"
                     className={cn("wd-l3b", i === workIdx && "is-on")}

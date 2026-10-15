@@ -708,6 +708,18 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
 /* 三级选中项同样放大 1.25 倍（与一级同一套时长 / 缓动 / 原点，
    只是溢出的余量留在 .wd-list 的 padding-right 里）。 */
 .wd-l3b.is-on{color:var(--ink);font-weight:620;transform:scale(1.25)}
+/* ── 三级菜单「切换」的过渡：上下滚动 + 渐隐渐显 ──
+   切组（换一级 / 换二级）时新内容从「来的方向」滑入 + 淡入，逐条错峰 38ms：
+   往下浏览 ⇒ 从下方升上来，往上 ⇒ 从上方降下来 —— 读起来就是列表在上下滚动。
+   ⚠ 动画挂 li、不挂 .wd-l3b：按钮自己用 transform:scale() 做选中放大(1.25)，
+     两处 transform 落在同一元素会互相覆盖。
+   ⚠ 方向切的是 CSS 变量、不是关键帧：改属性不会重启动画，只有新挂载 /
+     手动重播（全量 DOM + hidden 的版本，见 markList）的 li 才播 = 只在切组时播。 */
+@keyframes wd-l3-in{from{opacity:0;transform:translateY(var(--wd-l3-dy,18px))}to{opacity:1;transform:translateY(0)}}
+.wd-l3 > li{animation:wd-l3-in var(--wd-pop) both}
+.wd-l3[data-dir="down"] > li{--wd-l3-dy:18px}
+.wd-l3[data-dir="up"] > li{--wd-l3-dy:-18px}
+@media (prefers-reduced-motion:reduce){ .wd-l3 > li{animation:none} }
 
 /* ── 右：图片流 ──
    结构：.wd-feed-wrap（定尺寸 + 定位上下文）> .wd-feed（滚动容器）+ .wd-lq（上带）。
@@ -1570,6 +1582,9 @@ void main(){
   /* 当前状态：workIdx 是唯一真源，一级 / 二级 / 三级的高亮全部由它派生 */
   var workIdx=-1, secIdx=0, curGrp=0;
   var offs=[], lock=null, raf=0, lastW=0;
+  /* 三级列表「切换」过渡的方向：1 = 往下浏览（新内容从下方升上来），-1 = 往上。
+     只决定动画的起始位移（.wd-l3 那段里的 --wd-l3-dy），见 markList。 */
+  var l3dir=1, lastL3Key='';
 
   function measure(){
     if(page.hidden) return;
@@ -1707,16 +1722,33 @@ void main(){
     L3.innerHTML=h;
   }
   function markList(){
-    var ls=L3.children, any=false;
-    for(var i=0;i<ls.length;i++){
+    var ls=L3.children, any=false, shown=[], i;
+    for(i=0;i<ls.length;i++){
       var b=ls[i].firstElementChild;
       var show=(+b.dataset.sec===secIdx && +b.dataset.g===curGrp);
       ls[i].hidden=!show;
-      if(show) any=true;
+      if(show){ any=true; shown.push(ls[i]); }
       b.classList.toggle('is-on', +b.dataset.w===workIdx);
     }
     /* 「没有三级就不展示」的兜底（用 class，见 .wd-list.is-empty 那段注释） */
     LIST.classList.toggle('is-empty', !any);
+    /* ── 切换过渡：只有「组真的换了」（sec 或 grp 变）才播，同组内点不同作品不播。
+       ⚠ 这里是「全量 DOM + hidden 切换」，li 从不重新挂载 ⇒ 动画不会自己重播，
+       必须手动重置一次：animation:none → 强制回流 → 恢复，动画才会从头再放。
+       （hidden 触发 display:none→block 其实也会重启动画，但各引擎行为不保证一致，
+       显式重播才是确定的做法。） */
+    var key=secIdx+'-'+curGrp;
+    if(key!==lastL3Key){
+      lastL3Key=key;
+      L3.setAttribute('data-dir', l3dir<0?'up':'down');
+      for(i=0;i<shown.length;i++){
+        var li=shown[i];
+        li.style.animation='none';
+        void li.offsetWidth;                    /* 强制回流，下面那条赋值才会重启动画 */
+        li.style.animation='';
+        li.style.animationDelay=(i*38)+'ms';    /* 逐条错峰 38ms */
+      }
+    }
   }
 
   /* 状态变了只切 class —— 面板与列表在 init 时一次性建好（见 buildPanel / buildList）。
@@ -1738,6 +1770,7 @@ void main(){
 
   function setActive(i){
     if(i===workIdx || !D.W[i]) return;
+    l3dir = i>workIdx ? 1 : -1;   /* 三级列表切换过渡的方向（见 markList） */
     workIdx=i;
     var w=D.W[i]; secIdx=w.s; curGrp=w.g;
     apply();
@@ -1818,6 +1851,7 @@ void main(){
     for(var i=0;i<D.S.length;i++) if(D.S[i].s===slug){ si=i; break; }
     var first=WSEC[si][0];
     workIdx=first; secIdx=si; curGrp=D.W[first].g;
+    l3dir=1;              /* 进页当作「往下」，三级列表从下方升上来 */
     apply();
     lock=null;
     measure();

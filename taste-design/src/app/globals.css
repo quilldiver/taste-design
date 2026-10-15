@@ -1466,6 +1466,41 @@
   transform: scale(1.25);
 }
 
+/* ── 三级菜单「切换」的过渡：上下滚动 + 渐隐渐显 ──
+   切组（换一级 / 换二级）时，新内容从「来的方向」滑入 + 淡入，逐条错峰 38ms：
+   往下浏览 ⇒ 从下方升上来；往上浏览 ⇒ 从上方降下来 —— 读起来就是列表在上下滚动。
+   ⚠ 动画挂在 li 上、不是 .wd-l3b：按钮自己用 transform: scale() 做选中放大(1.25)，
+     两处 transform 落在同一元素会互相覆盖（后写的赢）。
+   ⚠ 方向切的是 CSS 变量而不是关键帧：改 class / 属性不会重启动画，只有新挂载
+     （Next 版）或手动重播（单文件版，全量 DOM + hidden）的 li 才播 ——
+     这正是「只在切组时播、同组内点不同作品不播」所要的。
+   ⚠ 窄屏三级是横向 chips（translateY 照样成立），reveal 只读 rect.left / width，
+     translateY 不影响它们，所以归位计算不会被打乱。 */
+@keyframes wd-l3-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--wd-l3-dy, 18px));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.wd-l3 > li {
+  animation: wd-l3-in var(--wd-pop) both;
+}
+.wd-l3[data-dir="down"] > li {
+  --wd-l3-dy: 18px;
+}
+.wd-l3[data-dir="up"] > li {
+  --wd-l3-dy: -18px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wd-l3 > li {
+    animation: none;
+  }
+}
+
 /* ── 右：图片流 ──
    结构：.wd-feed-wrap（定尺寸 + 定位上下文）> .wd-feed（滚动容器）+ .wd-lq（上带）。
    ⚠ 覆盖层必须放在**滚动容器外面**：放里面会跟着内容一起滚走；改用 sticky 又会占掉
