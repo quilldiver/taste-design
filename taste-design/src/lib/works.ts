@@ -5,14 +5,28 @@
  * - 二级 = SECTIONS[].groups（可空：该一级没有二级时只有一项 null，前端不渲染二级列）
  * - 三级 = WORKS（每个作品 = 详情页里按页码顺序排下来的若干张图）
  *
- * ⚠ WORKS 的顺序就是右侧图片流自上而下的顺序（按原作品集的页码升序），
- *   因此「滚到底自然接下一个作品」不需要额外排序逻辑。
+ * ⚠⚠ WORKS 的**数组顺序就是唯一真源**：它 = 一级菜单顺序 → 二级菜单顺序 → 原页码顺序。
+ *   右侧图片流直接 `WORKS.map()` 铺出来，所以「滚到底自然接下一个作品」是数据性质，
+ *   不需要任何拼接 / 排序逻辑；左中两栏的高亮又是从滚动位置反推的 —— 三者天然对齐。
+ *
+ *   ⚠ 曾经踩过的坑：WORKS 原本按原作品集页码升序排（P4 → P116），
+ *     而菜单的二级顺序是另一套 —— 于是图片流里二级会来回跳（实测 7 处反跳：
+ *     Activity 的「品牌活动 → 城市品牌活动 → 品牌活动」、Brand 的「餐饮 → 商业 → 餐饮」…），
+ *     看起来就是「顺序很乱」。现在把数组本身按菜单顺序重排，两边不可能再脱节。
+ *
+ *   ⚠ 也正因为顺序即真源，这里**不再单独维护**「某个一级有哪些作品」——
+ *     那是 `WORKS_BY_SEC`（下面按 sec 过滤派生出来的），数据只写一遍。
+ *
  * 素材在 public/works/ 下，文件名 = 原封面上的页码（P15 → 015.webp）。
  */
 
 export type WorkImage = { file: string; w: number; h: number };
 
 export type Work = {
+  /**
+   * ⚠ `wNN` 里的数字是**原作品集页码顺序**的编号，只是稳定标识符（React key / DOM 标记），
+   *   **与数组下标无关** —— 数组按菜单顺序重排后，w05 落在下标 8 上。要定位原始出处请看 `pages`。
+   */
   id: string;
   /** SECTIONS 下标 */
   sec: number;
@@ -30,49 +44,33 @@ export type Work = {
 
 export type Section = {
   slug: string;
+  /** 英文大字（一级菜单第一行） */
   en: string;
+  /** 中文小字（一级菜单第二行） */
   cn: string;
-  /** 二级名；null = 该一级不分二级 */
+  /** 二级名，**顺序即菜单顺序**；null = 该一级不分二级 */
   groups: (string | null)[];
-  /** 该一级作品在 WORKS 里的下标，按页码升序 */
-  works: number[];
 };
 
 export const SECTIONS: Section[] = [
-  {
-    slug: "logo", en: "Logo", cn: "标志设计",
-    groups: [null],
-    works: [0],
-  },
+  { slug: "logo", en: "Logo", cn: "标志设计", groups: [null] },
   {
     slug: "event", en: "Activity", cn: "活动设计",
     groups: ["视觉设计", "市集活动", "品牌活动", "城市品牌活动"],
-    works: [1, 2, 3, 4, 6, 8, 9, 5, 7],
   },
   {
     slug: "brand", en: "Brand", cn: "品牌设计",
     groups: ["潮玩", "餐饮", "商业", "城市", "宠物", "科技", "工业", "首饰"],
-    works: [10, 11, 12, 13, 15, 16, 20, 21, 22, 14, 19, 17, 18, 26, 23, 24, 25],
   },
   {
     slug: "pack", en: "Packaging", cn: "包装设计",
     groups: ["宠物", "餐饮", "护肤", "保健"],
-    works: [27, 28, 29, 30, 31, 32, 33, 35, 36, 37, 34, 38],
   },
-  {
-    slug: "type", en: "Typsetting", cn: "排版设计",
-    groups: [null],
-    works: [39],
-  },
-  {
-    slug: "ip", en: "IP", cn: "IP设计",
-    groups: [null],
-    works: [40, 41, 42, 43],
-  },
+  { slug: "type", en: "Typsetting", cn: "排版设计", groups: [null] },
+  { slug: "ip", en: "IP", cn: "IP设计", groups: [null] },
   {
     slug: "misc", en: "Other", cn: "其他设计",
     groups: ["文化空间打造", "展厅设计", "视觉设计", "详情页/公众号"],
-    works: [44, 45, 46, 47, 48, 49, 50, 51],
   },
 ];
 
@@ -87,16 +85,16 @@ export const WORKS: Work[] = [
     imgs: [{ file: "013.webp", w: 3214, h: 1360 }, { file: "014.webp", w: 4001, h: 2251 }] },
   { id: "w04", sec: 1, grp: 2, title: "海尔洗衣机 穿行四季冰雪季", pages: "P15-P18",
     imgs: [{ file: "015.webp", w: 2943, h: 1654 }, { file: "016.webp", w: 4001, h: 2251 }, { file: "017.webp", w: 4001, h: 2251 }, { file: "018.webp", w: 4001, h: 2251 }] },
-  { id: "w05", sec: 1, grp: 3, title: "青岛首届 宠物嘉年华", pages: "P19-P20",
-    imgs: [{ file: "019.webp", w: 3225, h: 2251 }, { file: "020.webp", w: 4001, h: 2251 }] },
   { id: "w06", sec: 1, grp: 2, title: "青岛精酿生活节 宠爱有好时光", pages: "P21-P22",
     imgs: [{ file: "021.webp", w: 3224, h: 2251 }, { file: "022.webp", w: 4001, h: 2251 }] },
-  { id: "w07", sec: 1, grp: 3, title: "市南区 “文明养犬” 主题实践活动", pages: "P23-P24",
-    imgs: [{ file: "023.webp", w: 3224, h: 2251 }, { file: "024.webp", w: 4001, h: 2251 }] },
   { id: "w08", sec: 1, grp: 2, title: "2024海尔全球创客音乐节", pages: "P25-P26",
     imgs: [{ file: "025.webp", w: 3224, h: 2251 }, { file: "026.webp", w: 4001, h: 2251 }] },
   { id: "w09", sec: 1, grp: 2, title: "2024年青岛海誓山盟婚尚博览会", pages: "P27-P28",
     imgs: [{ file: "027.webp", w: 3100, h: 1550 }, { file: "028.webp", w: 4001, h: 2251 }] },
+  { id: "w05", sec: 1, grp: 3, title: "青岛首届 宠物嘉年华", pages: "P19-P20",
+    imgs: [{ file: "019.webp", w: 3225, h: 2251 }, { file: "020.webp", w: 4001, h: 2251 }] },
+  { id: "w07", sec: 1, grp: 3, title: "市南区 “文明养犬” 主题实践活动", pages: "P23-P24",
+    imgs: [{ file: "023.webp", w: 3224, h: 2251 }, { file: "024.webp", w: 4001, h: 2251 }] },
   { id: "w10", sec: 2, grp: 0, title: "夹兀 快乐制造机", pages: "P30-P32",
     imgs: [{ file: "030.webp", w: 4001, h: 2251 }, { file: "031.webp", w: 4001, h: 2251 }, { file: "032.webp", w: 4001, h: 2251 }] },
   { id: "w11", sec: 2, grp: 0, title: "潮空间", pages: "P33-P34",
@@ -105,32 +103,32 @@ export const WORKS: Work[] = [
     imgs: [{ file: "035.webp", w: 4001, h: 2251 }, { file: "036.webp", w: 4001, h: 2251 }] },
   { id: "w13", sec: 2, grp: 1, title: "探索软冰的世界之旅", pages: "P37-P38",
     imgs: [{ file: "037.webp", w: 4001, h: 2251 }, { file: "038.webp", w: 4001, h: 2251 }] },
-  { id: "w14", sec: 2, grp: 2, title: "由甲律师", pages: "P39-P40",
-    imgs: [{ file: "039.webp", w: 4001, h: 2251 }, { file: "040.webp", w: 4001, h: 2251 }] },
   { id: "w15", sec: 2, grp: 1, title: "白马河", pages: "P41-P42",
     imgs: [{ file: "041.webp", w: 4001, h: 2251 }, { file: "042.webp", w: 4001, h: 2251 }] },
   { id: "w16", sec: 2, grp: 1, title: "七盏", pages: "P43-P44",
     imgs: [{ file: "043.webp", w: 4001, h: 2251 }, { file: "044.webp", w: 4001, h: 2251 }] },
-  { id: "w17", sec: 2, grp: 3, title: "世界最美海湾", pages: "P45-P46",
-    imgs: [{ file: "045.webp", w: 4001, h: 2251 }, { file: "046.webp", w: 4001, h: 2251 }] },
-  { id: "w18", sec: 2, grp: 4, title: "宠爱友好市", pages: "P47-P48",
-    imgs: [{ file: "047.webp", w: 4001, h: 2251 }, { file: "048.webp", w: 4001, h: 2251 }] },
-  { id: "w19", sec: 2, grp: 2, title: "Htinin", pages: "P49-P50",
-    imgs: [{ file: "049.webp", w: 4001, h: 2251 }, { file: "050.webp", w: 4001, h: 2251 }] },
   { id: "w20", sec: 2, grp: 1, title: "鱼小闲", pages: "P51-P52",
     imgs: [{ file: "051.webp", w: 4001, h: 2251 }, { file: "052.webp", w: 4001, h: 2251 }] },
   { id: "w21", sec: 2, grp: 1, title: "会仙楼饭庄", pages: "P53-P54",
     imgs: [{ file: "053.webp", w: 4001, h: 2251 }, { file: "054.webp", w: 4001, h: 2251 }] },
   { id: "w22", sec: 2, grp: 1, title: "串花巷", pages: "P55-P56",
     imgs: [{ file: "055.webp", w: 4001, h: 2251 }, { file: "056.webp", w: 4001, h: 2251 }] },
+  { id: "w14", sec: 2, grp: 2, title: "由甲律师", pages: "P39-P40",
+    imgs: [{ file: "039.webp", w: 4001, h: 2251 }, { file: "040.webp", w: 4001, h: 2251 }] },
+  { id: "w19", sec: 2, grp: 2, title: "Htinin", pages: "P49-P50",
+    imgs: [{ file: "049.webp", w: 4001, h: 2251 }, { file: "050.webp", w: 4001, h: 2251 }] },
+  { id: "w17", sec: 2, grp: 3, title: "世界最美海湾", pages: "P45-P46",
+    imgs: [{ file: "045.webp", w: 4001, h: 2251 }, { file: "046.webp", w: 4001, h: 2251 }] },
+  { id: "w18", sec: 2, grp: 4, title: "宠爱友好市", pages: "P47-P48",
+    imgs: [{ file: "047.webp", w: 4001, h: 2251 }, { file: "048.webp", w: 4001, h: 2251 }] },
+  { id: "w26", sec: 2, grp: 4, title: "儒狼/似虎/寻踪", pages: "P63-P68",
+    imgs: [{ file: "063.webp", w: 4001, h: 2251 }, { file: "064.webp", w: 4001, h: 2251 }, { file: "065.webp", w: 4001, h: 2251 }, { file: "066.webp", w: 4001, h: 2251 }, { file: "067.webp", w: 4001, h: 2251 }, { file: "068.webp", w: 4001, h: 2251 }] },
   { id: "w23", sec: 2, grp: 5, title: "澳信能源", pages: "P57-P58",
     imgs: [{ file: "057.webp", w: 4001, h: 2251 }, { file: "058.webp", w: 4001, h: 2251 }] },
   { id: "w24", sec: 2, grp: 6, title: "中德建材", pages: "P59-P60",
     imgs: [{ file: "059.webp", w: 4001, h: 2251 }, { file: "060.webp", w: 4001, h: 2251 }] },
   { id: "w25", sec: 2, grp: 7, title: "奈川", pages: "P61-P62",
     imgs: [{ file: "061.webp", w: 4001, h: 2251 }, { file: "062.webp", w: 4001, h: 2251 }] },
-  { id: "w26", sec: 2, grp: 4, title: "儒狼/似虎/寻踪", pages: "P63-P68",
-    imgs: [{ file: "063.webp", w: 4001, h: 2251 }, { file: "064.webp", w: 4001, h: 2251 }, { file: "065.webp", w: 4001, h: 2251 }, { file: "066.webp", w: 4001, h: 2251 }, { file: "067.webp", w: 4001, h: 2251 }, { file: "068.webp", w: 4001, h: 2251 }] },
   { id: "w27", sec: 3, grp: 0, title: "派贝", pages: "P70-P71",
     imgs: [{ file: "070.webp", w: 4001, h: 2251 }, { file: "071.webp", w: 4001, h: 2251 }] },
   { id: "w28", sec: 3, grp: 0, title: "舔舔乐", pages: "P72-P74",
@@ -145,14 +143,14 @@ export const WORKS: Work[] = [
     imgs: [{ file: "079.webp", w: 4001, h: 2251 }] },
   { id: "w33", sec: 3, grp: 1, title: "崮上泉", pages: "P80-P81",
     imgs: [{ file: "080.webp", w: 4001, h: 2251 }, { file: "081.webp", w: 4001, h: 2251 }] },
-  { id: "w34", sec: 3, grp: 2, title: "丞芙", pages: "P82-P83",
-    imgs: [{ file: "082.webp", w: 4001, h: 2251 }, { file: "083.webp", w: 4001, h: 2251 }] },
   { id: "w35", sec: 3, grp: 1, title: "小泡茶", pages: "P84-P85",
     imgs: [{ file: "084.webp", w: 4001, h: 2251 }, { file: "085.webp", w: 4001, h: 2251 }] },
   { id: "w36", sec: 3, grp: 1, title: "牧美滋", pages: "P86",
     imgs: [{ file: "086.webp", w: 4001, h: 2251 }] },
   { id: "w37", sec: 3, grp: 1, title: "莲藕荷叶膏", pages: "P87",
     imgs: [{ file: "087.webp", w: 4001, h: 2251 }] },
+  { id: "w34", sec: 3, grp: 2, title: "丞芙", pages: "P82-P83",
+    imgs: [{ file: "082.webp", w: 4001, h: 2251 }, { file: "083.webp", w: 4001, h: 2251 }] },
   { id: "w38", sec: 3, grp: 3, title: "NeoSmart", pages: "P88-P89",
     imgs: [{ file: "088.webp", w: 4001, h: 2251 }, { file: "089.webp", w: 4001, h: 2251 }] },
   { id: "w39", sec: 4, grp: 0, title: "排版设计", pages: "P91-P96",
@@ -182,3 +180,11 @@ export const WORKS: Work[] = [
   { id: "w51", sec: 6, grp: 3, title: "青啤吨吨杯", pages: "P116",
     imgs: [{ file: "116.webp", w: 3200, h: 2251 }] },
 ];
+
+/**
+ * 每个一级名下的作品下标 —— 从 WORKS 派生，不手工维护。
+ * 因为 WORKS 已按「一级 → 二级 → 页码」排好，所以每一段都是**连续的升序区间**。
+ */
+export const WORKS_BY_SEC: number[][] = SECTIONS.map((_, si) =>
+  WORKS.map((w, i) => (w.sec === si ? i : -1)).filter((i) => i >= 0),
+);

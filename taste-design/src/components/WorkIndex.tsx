@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { BASE } from "@/lib/site";
-import { SECTIONS, WORKS } from "@/lib/works";
+import { SECTIONS, WORKS, WORKS_BY_SEC } from "@/lib/works";
 import { cn } from "@/lib/utils";
 
 /**
@@ -23,12 +23,14 @@ import { cn } from "@/lib/utils";
  *
  * ⚠ 三栏的显示规则：没有二级就不渲染二级列；没有作品就不渲染三级列。
  *
- * ⚠ 右侧图片流里放的是**全部作品**（按原作品集页码升序），
- *   所以「滚到底自然接下一个作品」是数据结构本身的性质，不需要任何拼接逻辑；
+ * ⚠ 右侧图片流里放的是**全部作品**，而且 WORKS 的数组顺序本身就已经是
+ *   「一级 → 二级 → 页码」，所以 `WORKS.map()` 铺出来天然就是菜单顺序，
+ *   「滚到底自然接下一个作品」也是数据结构的性质、不需要任何拼接逻辑；
  *   反过来说，滚动位置才是唯一的状态源 —— 菜单的高亮由滚动反推出来。
  *
  * ⚠ 状态只有一个 workIdx：一级 / 二级 / 三级的高亮全部由它派生，
  *   避免三套状态互相打架（点一级跳过去、滚回来又对不上）。
+ *   它是 **WORKS 数组下标**，同时也是图片流里第几个 article —— 两者必须是同一个数。
  */
 
 /** SSR 期不能用 useLayoutEffect（会警告），用这个同构版本 */
@@ -45,7 +47,7 @@ export function WorkIndex({ slug }: { slug: string }) {
     SECTIONS.findIndex((s) => s.slug === slug),
   );
 
-  const [workIdx, setWorkIdx] = useState(() => SECTIONS[startSec].works[0]);
+  const [workIdx, setWorkIdx] = useState(() => WORKS_BY_SEC[startSec][0]);
   const [narrow, setNarrow] = useState(false);
   /** 图片流顶上的黑渐变：往下滚过才出现（见 sync / .is-scrolled） */
   const [scrolled, setScrolled] = useState(false);
@@ -75,10 +77,22 @@ export function WorkIndex({ slug }: { slug: string }) {
   const hasL2 = section.groups[0] !== null;
   atRef.current = workIdx;
 
-  /** 三级菜单的内容：有二级 ⇒ 当前二级的作品；没有二级 ⇒ 该一级的全部作品 */
+  /** 三级菜单的内容：有二级 ⇒ 当前二级的作品；没有二级 ⇒ 该一级的全部作品
+   *  ⚠ 顺序直接沿用 WORKS_BY_SEC（= 菜单顺序），不再另排一次 */
   const l3 = useMemo(
-    () => (hasL2 ? section.works.filter((w) => WORKS[w].grp === grp) : section.works),
-    [hasL2, section, grp],
+    () =>
+      hasL2
+        ? WORKS_BY_SEC[sec].filter((w) => WORKS[w].grp === grp)
+        : WORKS_BY_SEC[sec],
+    [hasL2, sec, grp],
+  );
+
+  /** 点某个二级按钮跳哪儿：该二级的第一个作品。
+   *  正常每个二级都有作品（?? 只是兜底，避免空组把 undefined 传进 jump）。 */
+  const firstOfGrp = useCallback(
+    (si: number, gi: number) =>
+      WORKS_BY_SEC[si].find((w) => WORKS[w].grp === gi) ?? WORKS_BY_SEC[si][0],
+    [],
   );
 
   const measure = useCallback(() => {
@@ -157,7 +171,7 @@ export function WorkIndex({ slug }: { slug: string }) {
   /* 进场 / 路由换到另一个一级：量一次尺寸，把图片流直接落到该一级的第一个作品 */
   useIsoLayoutEffect(() => {
     measure();
-    const i = SECTIONS[startSec].works[0];
+    const i = WORKS_BY_SEC[startSec][0];
     setWorkIdx(i);
     lock.current = null;
     const feed = feedRef.current;
@@ -333,7 +347,7 @@ export function WorkIndex({ slug }: { slug: string }) {
                       aria-current={on ? "true" : undefined}
                       aria-expanded={kids ? on : undefined}
                       aria-controls={kids ? `wd-l2-${s.slug}` : undefined}
-                      onClick={() => jump(s.works[0])}
+                      onClick={() => jump(WORKS_BY_SEC[si][0])}
                     >
                       <span className="wd-en">{s.en}</span>
                       <span className="wd-cn">{s.cn}</span>
@@ -347,7 +361,7 @@ export function WorkIndex({ slug }: { slug: string }) {
                               type="button"
                               className={cn("wd-l2b", gi === grp && "is-on")}
                               aria-current={gi === grp ? "true" : undefined}
-                              onClick={() => jump(s.works.find((w) => WORKS[w].grp === gi)!)}
+                              onClick={() => jump(firstOfGrp(si, gi))}
                             >
                               {g}
                             </button>
@@ -368,7 +382,7 @@ export function WorkIndex({ slug }: { slug: string }) {
                       type="button"
                       className={cn("wd-l2b", gi === grp && "is-on")}
                       aria-current={gi === grp ? "true" : undefined}
-                      onClick={() => jump(section.works.find((w) => WORKS[w].grp === gi)!)}
+                      onClick={() => jump(firstOfGrp(sec, gi))}
                     >
                       {g}
                     </button>
