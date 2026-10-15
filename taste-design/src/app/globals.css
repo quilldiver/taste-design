@@ -419,34 +419,230 @@
 }
 
 /* ─────────────────────────────────────────────
-   预留屏的空状态
+   作品页：Deckshift 式重叠牌堆（逻辑见 WorksBrowser.tsx）
+   静止：七张卡横向叠放、各自带一点固定倾斜，像一副没理齐的牌；
+   悬停 / 聚焦 / 点击某一张 ⇒ 它浮起当主角，两侧按距离被弹簧推开再小幅回弹；
+   <1024px 还原成干净的单列列表。
    ───────────────────────────────────────────── */
-.empty-frame {
-  position: relative;
-  border: 1px dashed rgba(255, 255, 255, 0.22);
-  border-radius: 4px;
+.deck {
+  --cw: clamp(178px, 16.5vw, 258px); /* 卡片宽 */
+  --ov: clamp(96px, 8.6vw, 138px); /* 相邻重叠量 ≈ 0.53 卡宽 */
+  --push: clamp(30px, 4.4vw, 80px); /* 每推开一格的位移（步长递减见 shiftOf） */
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  padding-block: 2.5rem 3rem;
+  list-style: none;
 }
 
-.empty-frame::before,
-.empty-frame::after {
+.deck-cell {
+  position: relative;
+  min-width: 0;
+}
+
+.deck-cell + .deck-cell {
+  margin-left: calc(-1 * var(--ov));
+}
+
+.deck-card {
+  position: relative;
+  width: var(--cw);
+  aspect-ratio: 3 / 4.15;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  background: linear-gradient(165deg, #0b1f4f 0%, #030815 72%);
+  overflow: hidden;
+  /* 位移 / 倾斜 / 浮起缩放合成一个 transform，交给同一次过渡 */
+  transform: translateX(calc(var(--shift, 0) * var(--push)))
+    rotate(var(--tilt, 0deg)) translateY(var(--lift, 0px))
+    scale(var(--zs, 1));
+  /* 弹性曲线：轻微过冲后收回（overshoot + recoil） */
+  transition:
+    transform 0.58s cubic-bezier(0.19, 1.26, 0.28, 1),
+    box-shadow 0.38s ease,
+    border-color 0.38s ease;
+  will-change: transform;
+}
+
+/* 顶部冷光：把卡片从深底里托出来，只在聚焦时亮起 */
+.deck-card::before {
   content: "";
   position: absolute;
-  width: 10px;
-  height: 10px;
-  border-color: rgba(255, 255, 255, 0.5);
-  border-style: solid;
+  inset: 0;
+  background: radial-gradient(
+    120% 60% at 50% -10%,
+    rgba(92, 152, 246, 0.2),
+    transparent 62%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.38s ease;
 }
 
-.empty-frame::before {
-  top: -1px;
-  left: -1px;
-  border-width: 1px 0 0 1px;
+.deck-card.is-active {
+  --lift: -14px;
+  --zs: 1.055;
+  border-color: rgba(255, 255, 255, 0.42);
+  /* 模糊压到 24px：3D/缩放层上的大模糊会让 Chrome 下调栅格分辨率、字发虚 */
+  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.9);
 }
 
-.empty-frame::after {
-  right: -1px;
-  bottom: -1px;
-  border-width: 0 1px 1px 0;
+.deck-card.is-active::before {
+  opacity: 1;
+}
+
+.deck-face {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: 1.05rem 1.1rem 1.2rem;
+}
+
+.deck-idx {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  color: var(--color-mute);
+}
+
+.deck-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.deck-icon {
+  align-self: center;
+  justify-self: start;
+  width: clamp(46px, 3.6vw, 58px);
+  color: rgba(255, 255, 255, 0.72);
+  transition:
+    color 0.38s ease,
+    transform 0.58s cubic-bezier(0.19, 1.26, 0.28, 1);
+}
+
+.deck-card.is-active .deck-icon {
+  color: var(--color-ink);
+  transform: scale(1.06);
+}
+
+.deck-icon svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.deck-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 620;
+  font-stretch: 97%;
+  font-size: clamp(1.1rem, 1.5vw, 1.4rem);
+  line-height: 1.15;
+  color: var(--color-ink);
+}
+
+.deck-en {
+  margin-top: 0.3rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  color: var(--color-mute);
+}
+
+/* 说明只在聚焦时展开，静止态保持干净的标题节奏 */
+.deck-note {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--color-mute);
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition:
+    opacity 0.38s ease,
+    max-height 0.58s cubic-bezier(0.19, 1.26, 0.28, 1);
+}
+
+.deck-card.is-active .deck-note {
+  opacity: 1;
+  max-height: 4.5rem;
+}
+
+/* 命中层：铺满整卡，键盘可聚焦、鼠标可悬停、触屏可点 */
+.deck-hit {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+@media (max-width: 1023px) {
+  .deck {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
+    padding-block: 0;
+  }
+
+  .deck-cell + .deck-cell {
+    margin-left: 0;
+  }
+
+  .deck-card {
+    width: 100%;
+    aspect-ratio: auto;
+    min-height: 0;
+    transform: none;
+    border-radius: 12px;
+  }
+
+  .deck-card.is-active {
+    --lift: 0px;
+    --zs: 1;
+    box-shadow: none;
+  }
+
+  /* 单列：图标在左、文案在右，编号挪到右上角 */
+  .deck-face {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
+    height: auto;
+    padding: 1.05rem 1.15rem;
+  }
+
+  .deck-idx {
+    position: absolute;
+    top: 0.9rem;
+    right: 1.15rem;
+  }
+
+  .deck-icon {
+    flex: 0 0 auto;
+    width: 44px;
+    align-self: auto;
+    justify-self: auto;
+  }
+
+  .deck-card.is-active .deck-icon {
+    transform: none;
+  }
+
+  .deck-note {
+    opacity: 1;
+    max-height: none;
+  }
 }
 
 /* ─────────────────────────────────────────────

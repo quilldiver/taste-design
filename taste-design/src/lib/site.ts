@@ -27,14 +27,18 @@ export const STUDIO = {
  */
 export const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
-/** 作品类型 —— 作品页按此分组 */
-export const WORK_TYPES = [
-  { id: "all", label: "全部", labelEn: "ALL" },
-  { id: "brand", label: "品牌识别", labelEn: "BRAND" },
-  { id: "web", label: "网站与数字", labelEn: "WEB" },
-  { id: "graphic", label: "视觉与平面", labelEn: "GRAPHIC" },
-  { id: "space", label: "空间与陈列", labelEn: "SPACE" },
-  { id: "type", label: "字体与排版", labelEn: "TYPE" },
+/**
+ * 作品页的七类出品 —— 以 Deckshift 式「重叠牌堆」呈现。
+ * kind 决定卡面图标；顺序即牌堆从左到右的顺序。
+ */
+export const WORK_DECKS = [
+  { kind: "logo", index: "001", cn: "标志设计", en: "LOGO", note: "一个符号，撑住所有触点" },
+  { kind: "brand", index: "002", cn: "品牌设计", en: "BRANDING", note: "把调性与规矩写成能复用的系统" },
+  { kind: "event", index: "003", cn: "活动设计", en: "CAMPAIGN", note: "限时、限地，一次说清一件事" },
+  { kind: "pack", index: "004", cn: "包装设计", en: "PACKAGING", note: "货架上的三秒决断" },
+  { kind: "type", index: "005", cn: "排版设计", en: "TYPOGRAPHY", note: "字距与行距里的呼吸节奏" },
+  { kind: "ip", index: "006", cn: "IP设计", en: "IP & MASCOT", note: "能被记住，也能被延展" },
+  { kind: "misc", index: "007", cn: "其他设计", en: "MISCELLANEOUS", note: "不好归类的好东西" },
 ] as const;
 
 export const NAV = [
