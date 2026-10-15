@@ -1,4 +1,5 @@
 import Carousel3D from "@/components/Carousel3D";
+import FullPageSnap from "@/components/FullPageSnap";
 import GlobeGallery from "@/components/GlobeGallery";
 import { CONTACTS, STUDIO } from "@/lib/site";
 
@@ -144,6 +145,8 @@ function ContactScreen() {
 export default function HomePage() {
   return (
     <>
+      {/* 一次滚轮 = 一屏（CSS snap 只吸最近的点，滚一格会被弹回） */}
+      <FullPageSnap />
       <HeroScreen />
       <GlobeScreen />
       <ContactScreen />

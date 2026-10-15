@@ -1223,6 +1223,71 @@ void main(){
 
   if(reduce){ entering=false; render(); } else { syncRun(); }
 })();
+
+/* ═══════════════════════════════════════════
+   整屏翻页：一次滚轮 / 翻页键 = 一屏
+   CSS scroll-snap 只会吸附到「最近」的吸附点：一格滚轮约 120~240px，
+   远不到半屏，松手后被 mandatory 拉回原屏（实测 757px 屏高要滚够 ~380px 才切屏）。
+   这里接管 wheel 与翻页键，一次输入直接送到相邻吸附点；
+   触屏拖动、滚动条拖拽仍走原生 CSS snap（mandatory + scroll-snap-stop:always）。
+   ═══════════════════════════════════════════ */
+(function(){
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)');
+  var busy=false, lastT=0, coolUntil=0;
+  /* 吸附点 = 各屏顶部；内容高于视口的屏再补一个「屏底」点，避免中段被锁死 */
+  function points(){
+    var vh=window.innerHeight, out=[], ss=document.querySelectorAll('.screen');
+    for(var i=0;i<ss.length;i++){
+      var r=ss[i].getBoundingClientRect();
+      if(r.height<8) continue;                      // 过滤 0 高的空容器
+      var top=Math.round(r.top+window.scrollY);
+      out.push(top);
+      if(r.height>vh+8) out.push(Math.round(top+r.height-vh));
+    }
+    return out.filter(function(v,i,a){return a.indexOf(v)===i;})
+              .sort(function(a,b){return a-b;});
+  }
+  function target(dir){
+    var y=window.scrollY, ps=points(), i;
+    if(dir>0){ for(i=0;i<ps.length;i++) if(ps[i]>y+2) return ps[i]; }
+    else { for(i=ps.length-1;i>=0;i--) if(ps[i]<y-2) return ps[i]; }
+    return null;
+  }
+  function go(dir){
+    var t=target(dir);
+    if(t===null) return false;                      // 已经到头
+    busy=true;
+    var dur=reduce.matches?0:620;
+    coolUntil=performance.now()+dur+100;            // 冷却：动画期间不再接受新输入
+    window.scrollTo({top:t,behavior:reduce.matches?'auto':'smooth'});
+    setTimeout(function(){ busy=false; },dur+80);
+    return true;
+  }
+  window.addEventListener('wheel',function(e){
+    if(e.ctrlKey||e.defaultPrevented) return;       // 捏合缩放 / 已被别人处理
+    if(Math.abs(e.deltaX)>Math.abs(e.deltaY)) return;   // 横向滚动不接管
+    var now=performance.now();
+    /* 动画中、冷却中、或同一串惯性滚动的后续事件：吃掉，但不翻页。
+       ⚠ lastT 必须在这里也更新：触控板惯性是 8~16ms 间隔的高频事件流，
+       若只在放行时更新，冷却一结束惯性尾巴会被误判成「新的一次滚动」而多翻一屏。 */
+    if(busy||now<coolUntil||now-lastT<90){ lastT=now; e.preventDefault(); return; }
+    lastT=now;
+    if(!e.deltaY) return;
+    if(!go(e.deltaY>0?1:-1)) return;                // 到头，交回浏览器原生滚动
+    e.preventDefault();
+  },{passive:false});
+
+  window.addEventListener('keydown',function(e){
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    var el=e.target, tag=el&&el.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||(el&&el.isContentEditable)) return;
+    if(e.key===' '&&(tag==='BUTTON'||tag==='A')) return;    // 空格激活控件时不抢
+    var d=({PageDown:1,ArrowDown:1,PageUp:-1,ArrowUp:-1})[e.key];
+    if(e.key===' ') d=e.shiftKey?-1:1;
+    if(d===undefined) return;
+    if(go(d)) e.preventDefault();
+  });
+})();
 </script>
 </body>
 </html>
