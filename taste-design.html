@@ -619,7 +619,18 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
    高度」又能真过渡的写法（max-height 要猜数字，height 要每帧量）。
    收起时顺手把 visibility 关掉：面板虽然被压成 0 高，但里面那些按钮仍然
    落在 Tab 顺序里，键盘用户会跳进一片看不见的东西。 */
-.wd-l2{padding-left:21px}
+/* ⚠ padding-right 同样是**放大余量**，和 .wd-nav / .wd-list 一个道理，但这里
+   多一层麻烦：.wd-l2 自己就是 `overflow:hidden`（手风琴必须裁），所以它的
+   padding box 才是裁剪边界 —— 二级按钮缩放的余量只能从它自己的 padding 里出，
+   用不了 .wd-nav 外侧那 55px（看得到、够不着）。
+   算一遍：按钮是 width:100%（= 220 − 21 = 199px），scale(1.25) 后右缘落在
+   21 + (199 − R) × 1.25，要 ≤ 220 ⇒ R ≥ 39.8px。取 R = --wd-c1 × .25 = 55px
+   （与一级栏同构），内容盒 144px、缩放后 180px，右缘 201px，富余 19px。
+   144px 放得下吗？已全量扫过 4 个面板共 20 条二级（620 字重下最长是
+   「详情页/公众号」105.6px），桌面态没有 nowrap，但 105.6 ≪ 144，不会折行。
+   ⚠ 这层 padding 是**向内缩**，不占外部空间 ⇒ 与三级那次不同，
+     .wd-list / .wd-feed 的宽度一点都不受影响。 */
+.wd-l2{padding-left:21px;padding-right:calc(var(--wd-c1) * .25)}
 @media (max-width:1023.98px){
   /* 窄屏没有内联手风琴，二级改用下面那行横向 chips */
   .wd-l1li > .wd-l2{display:none}
@@ -645,9 +656,12 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
 }
 .wd-l2b{display:block;width:100%;padding:.28rem 0;background:none;border:0;
   text-align:left;font:inherit;font-size:16px;line-height:1.4;color:var(--mute);
-  cursor:pointer;transition:color .25s ease}
+  cursor:pointer;transform-origin:left center;
+  transition:color .25s ease,transform var(--wd-pop)}
 .wd-l2b:hover{color:var(--ink)}
-.wd-l2b.is-on{color:var(--ink);font-weight:620}
+/* 二级选中项与一级/三级同一套时长 / 缓动 / 原点，放大 1.25 倍。
+   溢出的余量留在 .wd-l2 自己的 padding-right 里（见上面那段注释）。 */
+.wd-l2b.is-on{color:var(--ink);font-weight:620;transform:scale(1.25)}
 
 /* ── 中：三级 ──
    内容宽 = --wd-c3，与一级栏之间的净距 = --wd-gap（80px，参考图里左两栏是相邻的）。
@@ -714,11 +728,20 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
   .wd-l1b{width:auto;gap:.4rem;padding:.1rem 0;white-space:nowrap;transform-origin:center center}
   .wd-l1li.is-on .wd-l1b{transform:scale(1.2)}
   .wd-en{font-size:1.05rem}
-  .wd-l2row{display:flex;gap:.95rem;padding-left:0;margin-top:.3rem;overflow-x:auto;
+  /* 二级 chips 也一样：间距 .95 → 1.55rem（+9.6px，与上面一级行的 1.55rem
+     同值）给选中项的放大留出行距；系数收到 1.15（见下面 .wd-l2b.is-on）。
+     最坏相邻对是 misc 面板里的「详情页/公众号」105.6px，1.15 时两边共长
+     15.84px < 24.8px 行距，净距 9px。 */
+  .wd-l2row{display:flex;gap:1.55rem;padding-left:0;margin-top:.3rem;overflow-x:auto;
     scrollbar-width:none}
   .wd-l2row::-webkit-scrollbar{display:none}
   .wd-l2row > li{flex:none}
-  .wd-l2row .wd-l2b{width:auto;padding:.1rem 0;white-space:nowrap}
+  .wd-l2row .wd-l2b{width:auto;padding:.1rem 0;white-space:nowrap;
+    transform-origin:center center}
+  /* 窄屏二级同样收一档到 1.15（桌面是 1.25）：chip 是横排的，
+     最长的二级比三级标题短得多，但 1.25 仍会把 105.6px 的 chip 两边各
+     撑长 13.2px、超过行距的一半。1.15 与窄屏三级同系数。 */
+  .wd-l2b.is-on{transform:scale(1.15)}
   .wd-list{width:auto;margin-left:0;padding:.35rem 0 0;overflow:visible;
     flex:none;display:block}
   /* 行距同时放大一点（.95 → 1.35rem）：三级标题最长 235px，缩放到 1.15

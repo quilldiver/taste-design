@@ -1292,8 +1292,21 @@
    收起时顺手把 visibility 关掉：面板虽然被压成 0 高，但里面那些按钮仍然
    落在 Tab 顺序里，键盘用户会跳进一片看不见的东西。
    窄屏整条不出现（改用下面那行横向 chips）。 */
+
+/* ⚠ padding-right 同样是**放大余量**，和 .wd-nav / .wd-list 一个道理，但这里
+   多一层麻烦：.wd-l2 自己就是 `overflow:hidden`（手风琴必须裁），所以它的
+   padding box 才是裁剪边界 —— 二级按钮缩放的余量只能从它自己的 padding 里出，
+   用不了 .wd-nav 外侧那 55px（看得到、够不着）。
+   算一遍：按钮是 width:100%（= 220 − 21 = 199px），scale(1.25) 后右缘落在
+   21 + (199 − R) × 1.25，要 ≤ 220 ⇒ R ≥ 39.8px。取 R = --wd-c1 × .25 = 55px
+   （与一级栏同构），内容盒 144px、缩放后 180px，右缘 201px，富余 19px。
+   144px 放得下吗？已全量扫过 4 个面板共 20 条二级（620 字重下最长是
+   「详情页/公众号」105.6px），桌面态没有 nowrap，但 105.6 ≪ 144，不会折行。
+   ⚠ 这层 padding 是**向内缩**，不占外部空间 ⇒ 与三级那次不同，
+     .wd-list / .wd-feed 的宽度一点都不受影响。 */
 .wd-l2 {
   padding-left: 21px;
+  padding-right: calc(var(--wd-c1) * 0.25);
 }
 
 @media (min-width: 1024px) {
@@ -1352,14 +1365,20 @@
   line-height: 1.4;
   color: var(--color-mute);
   cursor: pointer;
-  transition: color 0.25s ease;
+  transform-origin: left center;
+  transition:
+    color 0.25s ease,
+    transform var(--wd-pop);
 }
 .wd-l2b:hover {
   color: var(--color-ink);
 }
+/* 二级选中项与一级/三级同一套时长 / 缓动 / 原点，放大 1.25 倍。
+   溢出的余量留在 .wd-l2 自己的 padding-right 里（见上面那段注释）。 */
 .wd-l2b.is-on {
   color: var(--color-ink);
   font-weight: 620;
+  transform: scale(1.25);
 }
 
 /* ── 中：三级 ──
@@ -1525,9 +1544,13 @@
   .wd-en {
     font-size: 1.05rem;
   }
+  /* 二级 chips 也一样：间距 0.95 → 1.55rem（+9.6px，与上面一级行的 1.55rem
+     同值）给选中项的放大留出行距；系数收到 1.15（见下面 .wd-l2b.is-on）。
+     最坏相邻对是 misc 面板里的「详情页/公众号」105.6px，1.15 时两边共长
+     15.84px < 24.8px 行距，净距 9px。 */
   .wd-l2row {
     display: flex;
-    gap: 0.95rem;
+    gap: 1.55rem;
     padding-left: 0;
     margin-top: 0.3rem;
     overflow-x: auto;
@@ -1539,10 +1562,17 @@
   .wd-l2row > li {
     flex: none;
   }
-  .wd-l2b {
+  .wd-l2row .wd-l2b {
     width: auto;
     padding: 0.1rem 0;
     white-space: nowrap;
+    transform-origin: center center;
+  }
+  /* 窄屏二级同样收一档到 1.15（桌面是 1.25）：chip 是横排的，
+     最长的二级比三级标题短得多，但 1.25 仍会把 105.6px 的 chip 两边各
+     撑长 13.2px、超过行距的一半。1.15 与窄屏三级同系数。 */
+  .wd-l2b.is-on {
+    transform: scale(1.15);
   }
   .wd-list {
     width: auto;
