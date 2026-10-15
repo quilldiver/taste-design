@@ -331,8 +331,23 @@
 }
 
 /* 真实图片上把颗粒压淡：占位渐变需要它撑质感，照片上 0.5 会显脏 */
-.carousel-face-front .carousel-plate-grain {
+.carousel-face-front .carousel-plate-grain,
+.carousel-face-back .carousel-plate-grain {
   opacity: 0.22;
+}
+
+/* 背面也贴真实作品图：压一层品牌深色，保证编号文字可读 */
+.carousel-face-back .carousel-plate::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    165deg,
+    rgba(11, 31, 79, 0.42),
+    rgba(3, 8, 21, 0.62)
+  );
 }
 
 .carousel-plate-grain {

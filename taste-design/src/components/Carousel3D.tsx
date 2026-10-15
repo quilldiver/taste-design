@@ -43,6 +43,26 @@ function pickRandom(arr: readonly string[], n: number) {
 }
 
 /**
+ * 抽两组随机图：正面一组、背面一组，两面都能看见作品。
+ * 同一张卡的正反面撞成同一张时，换到换完两边都不重复的位置。
+ */
+function pickPair(arr: readonly string[], n: number) {
+  const front = pickRandom(arr, n);
+  const back = pickRandom(arr, n);
+  for (let i = 0; i < n; i++) {
+    if (back[i] !== front[i]) continue;
+    for (let d = 1; d < n; d++) {
+      const k = (i + d) % n;
+      if (back[k] !== front[i] && back[i] !== front[k]) {
+        [back[i], back[k]] = [back[k], back[i]];
+        break;
+      }
+    }
+  }
+  return { front, back };
+}
+
+/**
  * SSR / 静态导出时没有 window，用 useEffect 兜底避免 React 警告。
  * 客户端走 useLayoutEffect：在首帧绘制前就把随机结果写进去，看不到闪换。
  */
@@ -85,9 +105,12 @@ export default function Carousel3D({ className }: { className?: string }) {
 
   /* 初始 = 前 N 张确定性顺序：SSR / 无 JS 时也有图可看；
      hydration 后立刻换成随机的一组（绘制前完成，无闪烁） */
-  const [picks, setPicks] = useState<string[]>(() => IMAGES.slice(0, COUNT));
+  const [face, setFace] = useState<{ front: string[]; back: string[] }>(() => ({
+    front: IMAGES.slice(0, COUNT),
+    back: IMAGES.slice(0, COUNT).map((_, i) => IMAGES[(i + 6) % IMAGES.length]),
+  }));
   useIsoLayoutEffect(() => {
-    setPicks(pickRandom(IMAGES, COUNT));
+    setFace(pickPair(IMAGES, COUNT));
   }, []);
 
   useEffect(() => {
@@ -243,7 +266,7 @@ export default function Carousel3D({ className }: { className?: string }) {
                   <span className="carousel-plate-blob" />
                   <img
                     className="carousel-plate-img"
-                    src={`${BASE}/carousel/3dcarousel_${picks[i] ?? IMAGES[i]}.webp`}
+                    src={`${BASE}/carousel/3dcarousel_${face.front[i] ?? IMAGES[i]}.webp`}
                     alt=""
                     decoding="async"
                     draggable={false}
@@ -257,7 +280,17 @@ export default function Carousel3D({ className }: { className?: string }) {
                 </figcaption>
               </div>
               <div className="carousel-face carousel-face-back" aria-hidden="true">
-                <div className="carousel-plate" aria-hidden="true" />
+                <div className="carousel-plate" aria-hidden="true">
+                  <img
+                    className="carousel-plate-img"
+                    src={`${BASE}/carousel/3dcarousel_${face.back[i] ?? IMAGES[i]}.webp`}
+                    alt=""
+                    decoding="async"
+                    loading="lazy"
+                    draggable={false}
+                  />
+                  <span className="carousel-plate-grain" />
+                </div>
                 <span className="carousel-back-mark">
                   {p.index} — TASTE DESIGN
                 </span>

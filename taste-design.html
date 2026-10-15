@@ -196,7 +196,10 @@ main{position:relative;z-index:1}
     radial-gradient(closest-side at 72% 66%,hsl(calc(var(--hue) + 26) 88% 62% / .6),transparent 72%),
     conic-gradient(from calc(var(--i) * 42deg),hsl(var(--hue) 72% 46% / .5),transparent 38%,hsl(calc(var(--hue) - 34) 76% 54% / .42),transparent 76%)}
 /* 真实图片上把颗粒压淡：占位渐变需要它撑质感，照片上 0.5 会显脏 */
-.front .plate-grain{opacity:.22}
+.front .plate-grain,.back .plate-grain{opacity:.22}
+/* 背面也贴真实作品图：压一层品牌深色，保证编号文字可读 */
+.back .plate::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(165deg,rgba(11,31,79,.42),rgba(3,8,21,.62))}
 .plate-grain{position:absolute;inset:0;opacity:.5;mix-blend-mode:overlay;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E")}
 .cap{position:relative;z-index:2;display:flex;flex-direction:column;gap:.28em;padding:1.1em 1em 1em;
@@ -730,6 +733,17 @@ void main(){
   root.setAttribute('aria-hidden','true');   // 纯装饰，读屏跳过
   root.style.setProperty('--theta',(360/PANELS.length)+'deg');
   const picks=pickRandom(IMAGES, PANELS.length);
+  /* 背面再来一组独立随机：两面都能看见作品图，且同一张卡正反面不会撞同一张 */
+  const backs=pickRandom(IMAGES, PANELS.length);
+  for(let i=0;i<backs.length;i++){
+    if(backs[i]!==picks[i]) continue;
+    for(let d=1;d<backs.length;d++){          // 找一张换过来后两边都不同的位置
+      const k=(i+d)%backs.length;
+      if(backs[k]!==picks[i] && backs[i]!==picks[k]){
+        const t=backs[i]; backs[i]=backs[k]; backs[k]=t; break;
+      }
+    }
+  }
   root.innerHTML =
     '<div class="tilt"><div class="fan">' +
     PANELS.map((p,i)=>`
@@ -748,7 +762,11 @@ void main(){
           </figcaption>
         </div>
         <div class="face back" aria-hidden="true">
-          <div class="plate" aria-hidden="true"></div>
+          <div class="plate" aria-hidden="true">
+            <img class="plate-img" src="${CAROUSEL_DIR}3dcarousel_${backs[i]}.webp"
+                 alt="" decoding="async" loading="lazy" draggable="false">
+            <span class="plate-grain"></span>
+          </div>
           <span class="back-mark">${p.idx} — TASTE DESIGN</span>
         </div>
       </figure>`).join('') +
