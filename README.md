@@ -128,8 +128,12 @@ npm run typecheck  # tsc --noEmit
 素材一律**原样拷贝**：不做降采样、不裁切、不抠底、不内联 base64——包括 logo 的 color 版自带白底也保留。
 球面卡片的 `IH = IW × 0.5 + 1`（`+1` 抵消左右各 1px 边框）跟着素材的 2:1 比例走，别单独改。
 
-**标签页图标** `favicon.ico` 同理原样引用（48×48 的 PNG-in-ICO 容器，不重制），同一个文件放两处：
+**标签页图标** `favicon.ico` 同理原样引用（**多尺寸 PNG-in-ICO，7 层：16/24/32/48/64/128/256**，不重制），
+同一个文件放两处：
 根目录给 `taste-design.html` 同级引用（`<link rel="icon" href="favicon.ico" sizes="any">`），
 `taste-design/public/favicon.ico` 给 Next 版（导出后落在 `out/favicon.ico`，线上即 `/taste-design/favicon.ico`）。
+⚠ 多尺寸的意义：浏览器按设备像素比自取最合适的一层——1× 屏取 16、2× 屏取 32——都落在原生像素上，
+不做拉伸。**若只含 16 一层，Retina 屏把 16 放大一倍绘制会明显发糊**，所以要换图标时务必换多尺寸版。
+⚠ 内含的各层必须是**同一裁切**的多档尺寸；拿两个裁切不同的图硬合进一个 ico，切换尺寸时图形会忽大忽小。
 ⚠ Next 版**不要**用 `metadata.icons`：手写绝对路径不会被 `basePath` 自动改写（`assetPrefix` 只管 `_next/*`），
 所以是在 `layout.tsx` 的 `<head>` 里写 `` href={`${BASE}/favicon.ico`} ``——同 §七 那条约定。
