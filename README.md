@@ -17,6 +17,7 @@
 
 ```
 taste-design.html          单文件交付版（双击即开，图片走同级的 logo/ carousel/ works/）
+favicon.ico                标签页图标（与 HTML 同级，直接引用文件）
 logo/                      第二屏球面素材 · 28 张 2000×1000 webp（14 品牌 × white/color）
 carousel/                  首屏木马素材 · 14 张 1000×1250 webp
 works/                     作品详情图 · 107 张 webp（多为 4001×2251）
@@ -126,3 +127,9 @@ npm run typecheck  # tsc --noEmit
 
 素材一律**原样拷贝**：不做降采样、不裁切、不抠底、不内联 base64——包括 logo 的 color 版自带白底也保留。
 球面卡片的 `IH = IW × 0.5 + 1`（`+1` 抵消左右各 1px 边框）跟着素材的 2:1 比例走，别单独改。
+
+**标签页图标** `favicon.ico` 同理原样引用（48×48 的 PNG-in-ICO 容器，不重制），同一个文件放两处：
+根目录给 `taste-design.html` 同级引用（`<link rel="icon" href="favicon.ico" sizes="any">`），
+`taste-design/public/favicon.ico` 给 Next 版（导出后落在 `out/favicon.ico`，线上即 `/taste-design/favicon.ico`）。
+⚠ Next 版**不要**用 `metadata.icons`：手写绝对路径不会被 `basePath` 自动改写（`assetPrefix` 只管 `_next/*`），
+所以是在 `layout.tsx` 的 `<head>` 里写 `` href={`${BASE}/favicon.ico`} ``——同 §七 那条约定。

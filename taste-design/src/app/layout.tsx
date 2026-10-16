@@ -3,6 +3,7 @@ import "./globals.css";
 import ShaderBackground from "@/components/ShaderBackground";
 import SiteNav from "@/components/SiteNav";
 import PageSwipe from "@/components/PageSwipe";
+import { BASE } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Taste Design 设计厨房",
@@ -20,6 +21,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN">
+      <head>
+        {/* 标签页图标：public/favicon.ico → 导出后落在站点根（out/favicon.ico）。
+            ⚠ 手写绝对路径不会被 next.config 的 basePath 自动改写，须自己拼 BASE
+              （同 src/lib/site.ts 里那条约定）。 */}
+        <link rel="icon" href={`${BASE}/favicon.ico`} sizes="any" />
+      </head>
       <body className="relative overflow-x-hidden antialiased">
         {/* 三层背景：CSS 兜底 → WebGL shader → 压暗 + 颗粒 */}
         <div className="bg-fallback" aria-hidden="true" />
