@@ -237,22 +237,35 @@
    ───────────────────────────────────────────── */
 .carousel {
   /* 所有内部尺寸都是 em，改这一个值就能整体缩放。
-     150% 尺寸档；perspective 同比放大（1200→1800）保持透视形变一致 */
-  font-size: clamp(12px, 1.425vw, 20.25px);
+     225% 尺寸档（= 上一档 150% 再放大 1.5 倍）；
+     perspective 同比放大（1200→1800→2700）保持透视形变一致 */
+  font-size: clamp(18px, 2.1375vw, 30.375px);
   --cw: 19em;
   --ch: 23.75em; /* 290×363 ≈ 4:5，与参考卡片同比例 */
   /* 整体倾斜缩放 --s 放这里（.carousel-tilt 继承），窄屏下调；
      --fit 是 <1024 上下分屏时「星形占可用空间的比例」
      = 0.92 ÷ 42.7em(星形包围盒) ÷ --s，供 font-size 的 cqh/vw 项使用，
-     改 --s 时必须一起改（三个断点各一对） */
+     改 --s 时必须一起改（三个断点各一对）；
+     225% 档同一比例 0.92 也要 ×1.5 = 1.38（星形会超出那一行，正是放大的观感） */
   --s: 0.8;
-  --fit: 0.0269;
+  --fit: 0.04035;
   width: 100%;
   display: grid;
   place-items: center;
-  perspective: 1800px;
+  perspective: 2700px;
   perspective-origin: 50% 46%;
   position: relative;
+  /* 放大后星形（约 34.3em 见方）比「右列」宽出约 1/3，会盖到左列文案上。
+     让整个木马按 --dx / --dy 平移，把左缘让出文案区、右侧出血交给
+     main 的 overflow-x:clip 裁掉。
+     桌面：右移量随视口连续收敛 —— 视口越窄、右列越窄、需要的让位越多，
+     到 1590px 以上版心已能容纳（星形左缘天然落在文案之后）就归零；
+     用 clamp 而不是媒体查询断点，1599↔1600 这种边界才不会让木马跳一下。
+     <1024 改为上下分屏 ⇒ 改用向下让位（星形高 = 1.38 倍行高，上溢那半
+     ≈ 0.19 × min(100vw,100cqh)），避免星形顶到上方的 meta 文案。 */
+  --dx: 0px;
+  --dy: 0px;
+  translate: var(--dx) var(--dy);
   /* pan-y 而不是 none：<1024 时木马独占下半区、占位很大，
      none 会让这一整片区域在触屏上「吞掉」纵向滑动；水平拖拽仍然可用 */
   touch-action: pan-y;
@@ -469,16 +482,24 @@
 @media (max-width: 1024px) {
   .carousel {
     --s: 0.78;
-    --fit: 0.0276;
+    --fit: 0.0414;
   }
 }
 
 @media (max-width: 640px) {
   .carousel {
     --s: 0.62;
-    --fit: 0.0347;
+    --fit: 0.05205;
     --rz: -16deg;
     --rx: -38deg;
+  }
+}
+
+/* 放大 1.5 倍后的「让位」（机制见 .carousel 里 --dx 那段注释）：
+   桌面按视口连续右移，1700px 以上归零。 */
+@media (min-width: 1024px) {
+  .carousel {
+    --dx: clamp(0px, calc((1590px - 100vw) * 0.75), 5.2em);
   }
 }
 
@@ -491,6 +512,7 @@
   .carousel {
     height: 100%;
     font-size: calc(var(--fit) * min(100vw, 100cqh));
+    --dy: calc(min(100vw, 100cqh) * 0.19);
   }
 }
 
