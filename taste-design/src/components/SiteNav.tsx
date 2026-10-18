@@ -96,8 +96,15 @@ export default function SiteNav() {
                     href={item.href}
                     aria-current={active ? "page" : undefined}
                     className={[
-                      "flex min-h-[44px] items-center rounded-sm px-3 py-2 transition-colors duration-200 max-[479px]:px-1.5 sm:px-4",
-                      active ? "text-ink" : "text-mute hover:text-ink",
+                      /* 两态：常规 = 整项 50% 透明，激活（当前页）= 100%。
+                         用 opacity 而不是 text-ink/text-mute —— 子元素各自带
+                         字色（EN 是 text-mute、CN 是 text-ink），改父级 color
+                         根本传不下去，之前那套 active/inactive 其实看不出差别。
+                         hover 取中间档 75%：有反馈，但不会被误读成「已选中」。 */
+                      "flex min-h-[44px] items-center rounded-sm px-3 py-2 transition-opacity duration-200 max-[479px]:px-1.5 sm:px-4",
+                      active
+                        ? "opacity-100"
+                        : "opacity-50 hover:opacity-75 focus-visible:opacity-100",
                     ].join(" ")}
                   >
                     <span className="flex flex-col leading-none">

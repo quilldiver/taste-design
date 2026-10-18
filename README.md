@@ -100,7 +100,25 @@ taste-design/              Next.js 交付版（源码）
   > 两个交付版的断点本来就不一样，所以受影响范围也不同：**单文件版**这一屏是「<640 一列 / 640~1023 三列 / ≥1024 四列」⇒ 640 ~ 1100 都重叠（1024 下 −19px、760 下 −24px、640 下 −57px）；**Next 版**用的是 `sm:grid-cols-2 lg:grid-cols-4` ⇒ <1024 是 2 列反而放得下，只有 1024 ~ 1100 这段 4 列区间重叠（1024 下 −19px）。
   > 要消掉就在 `max-width: 1100px` 以下收一档（与作品索引页窄屏同样收到的 1.15；640 下需要 ≤1.18 才干净）。
 
-## 六、本地开发
+## 六、顶部导航的两态：常规 50% / 激活 100%
+
+「我们 / 作品」两项只有两种状态，全部由 `aria-current="page"` 一个信号驱动：
+
+| 状态 | 判据 | 整项透明度 |
+|---|---|---|
+| 激活 | 当前路由（带 `aria-current="page"`） | **100%** |
+| 常规 | 其余 | **50%** |
+| hover（常规项） | 指针悬停 | 75%（中间档） |
+| 键盘焦点 | `:focus-visible` | 100% |
+
+- **用 `opacity` 而不是改字色**。「整体」意味着 EN 小标（`--mute`）与 CN 中文（`--ink`）要一起变淡；改父级 `color` 传不下去——两个子元素各自带字色，父级改色对它们无效。
+  > Next 版原来写的是 `active ? "text-ink" : "text-mute"`，而子元素各自 `text-mute` / `text-ink`，所以那套 class 一直是**空转的**，两态在页面上看不出差别。换成本次这套才真正生效。
+- **「激活」只有一个信号来源**：单文件版在 `markLinks()` 里按路由给 `data-route` 匹配的 `<a>` 加 / 删 `aria-current`；Next 版由 `usePathname()` 推导后传给 `SwipeLink`（它 `{...rest}` 透传）。无障碍属性和视觉状态因此永远是同一个真源，不会各说各话。
+- **hover 取 75% 而不是 100%**：直接跳到 100% 会被误读成「这个已经选中了」；75% 只表示「可点」。触摸设备没有 hover，不受影响。
+- ⚠ 加这条时踩过一个坑：`.menu a` 上原来那句 `color:var(--mute)` 是 CN 中文**唯一**的字色来源。改成 `opacity` 后它被删掉，`.menu .cn` 就退回了浏览器默认的链接蓝。现在 `.menu .cn` 显式写 `color:var(--ink)`——验收里有一条断言专门盯这个。
+- ⚠ 首屏导航浮在 3D 木马之上（hero 不铺黑幕），木马转到亮色卡片经过时会削弱对比，这是原有取舍、不是本次引入的。常规档下 EN 小标只有 25% 有效透明度，若嫌太淡，把 `.menu .en` 的 `--mute` 抬到 70% 白即可（有效 35%）。
+
+## 七、本地开发
 
 ```bash
 cd taste-design
@@ -110,7 +128,7 @@ npm run build      # 静态导出到 out/（output: "export"）
 npm run typecheck  # tsc --noEmit
 ```
 
-## 七、部署相关的几个约定
+## 八、部署相关的几个约定
 
 - **静态导出**：`next.config.ts` 里 `output: "export"` + `trailingSlash: true`，站点没有任何服务端依赖。
   `/works/[slug]` 用 `generateStaticParams()` 在构建期列出 7 个分类。
@@ -121,7 +139,7 @@ npm run typecheck  # tsc --noEmit
   子路径部署会 404。放进 `src/fonts/` 后会被输出到 `/_next/static/media/` 下，前缀自动生效。
 - `public/.nojekyll`：防止 `_next` 这类下划线目录被 Jekyll 跳过。
 
-## 八、素材
+## 九、素材
 
 `logo/`、`carousel/`、`works/` 是三个真源，`taste-design/public/` 与 `assets/` 下各有一份同步副本。
 
@@ -136,4 +154,4 @@ npm run typecheck  # tsc --noEmit
 不做拉伸。**若只含 16 一层，Retina 屏把 16 放大一倍绘制会明显发糊**，所以要换图标时务必换多尺寸版。
 ⚠ 内含的各层必须是**同一裁切**的多档尺寸；拿两个裁切不同的图硬合进一个 ico，切换尺寸时图形会忽大忽小。
 ⚠ Next 版**不要**用 `metadata.icons`：手写绝对路径不会被 `basePath` 自动改写（`assetPrefix` 只管 `_next/*`），
-所以是在 `layout.tsx` 的 `<head>` 里写 `` href={`${BASE}/favicon.ico`} ``——同 §七 那条约定。
+所以是在 `layout.tsx` 的 `<head>` 里写 `` href={`${BASE}/favicon.ico`} ``——同 §八 那条约定。
