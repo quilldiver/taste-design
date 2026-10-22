@@ -28,10 +28,9 @@ export default function RootLayout({
         <link rel="icon" href={`${BASE}/favicon.ico`} sizes="any" />
       </head>
       <body className="relative overflow-x-hidden antialiased">
-        {/* 三层背景：CSS 兜底 → WebGL shader → 压暗 + 颗粒 */}
+        {/* 背景两层：CSS 兜底 → WebGL shader；压暗罩（shader-scrim）已按用户要求移除 */}
         <div className="bg-fallback" aria-hidden="true" />
         <ShaderBackground />
-        <div className="shader-scrim" aria-hidden="true" />
         <div className="grain" aria-hidden="true" />
 
         {/* PageSwipe 提供「渐隐渐现 + 左右滑动」的换页过渡；

@@ -1,18 +1,25 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────
-   字体：英文统一 Alimama Agile VF（四轴可变，本地 woff2）
-   中文统一黑体系（苹方 → 冬青黑 → 黑体-简 → 雅黑 → 思源黑体）
-   ───────────────────────────────────────────── */
-@font-face {
-  font-family: "Alimama Agile VF";
-  /* 字体放在 src/fonts/ 由 webpack 打包（而不是 public/）：
+   字体：中文 + 英文统一「钉钉进步体」（单字重 400）
+
+   woff2 是按「站点实际用到的字符」做的子集（约 139KB，原 ttf 2.0MB），
+   由 tools/build-fonts.py 生成 —— 改文案出现新汉字时重跑一次脚本。
+   子集里没有的字会退回后面的系统字体，不会出现豆腐块。
+
+   ⚠ 这套字体只有一档，所以 body 上加了 font-synthesis:none：
+     500 / 620 / 700 这些字重不再由浏览器描边合成假粗体，
+     否则中文会被「糊」成胖字，比不加粗更难看。层级交给字号与颜色。
+
+   ⚠ 字体放在 src/fonts/ 由 webpack 打包（而不是 public/）：
      public/ 里的资源在 CSS 中只能写根绝对路径 /fonts/...，Next 不会给它补 basePath，
      部署到 GitHub Pages 的 /<repo> 子路径后会 404。
-     走 webpack 会被输出到 /_next/static/media/ 下，basePath 自动生效。 */
-  src: url("../fonts/AlimamaAgileVF-Thin.woff2") format("woff2");
-  font-weight: 100 700;
-  font-stretch: 75% 125%;
+     走 webpack 会被输出到 /_next/static/media/ 下，basePath 自动生效。
+   ───────────────────────────────────────────── */
+@font-face {
+  font-family: "钉钉进步体";
+  src: url("../fonts/DingTalkJinBuTi.woff2") format("woff2");
+  font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
@@ -22,8 +29,8 @@
    70% 深蓝 / 20% 中蓝流光 / 10% 炉火琥珀
    ───────────────────────────────────────────── */
 @theme {
-  --font-display: "Alimama Agile VF", "PingFang SC", "Hiragino Sans GB",
-    "Heiti SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-display: "钉钉进步体", "DingTalk JinBuTi", "PingFang SC",
+    "Hiragino Sans GB", "Heiti SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
   --font-sans: var(--font-display);
   --font-mono: var(--font-display);
 
@@ -62,8 +69,9 @@
     font-family: var(--font-sans);
     font-size: 1rem;
     line-height: 1.65;
-    /* Agile 默认实例为 Thin(100)/Narrow(75)，字重与字宽必须显式给值 */
+    /* 钉钉进步体只有 400 一档；关掉字体合成，避免浏览器描边出假粗体 */
     font-weight: 400;
+    font-synthesis: none;
     font-stretch: 100%;
     color: var(--color-ink);
     background-color: var(--color-deep);
@@ -125,15 +133,18 @@
     linear-gradient(180deg, #000 0%, #01050c 46%, #032844 78%, #045a8c 100%);
 }
 
-/* 统一压暗一层，保证文字对比度，同时让 shader 退到"背景"的位置 */
+/* 压暗罩已按用户要求移除：shader 光带原样透出，不再统一压成灰阶。
+   ⚠ 代价：最亮处白字对比度会下降（这层就是为此加的）。
+   若恢复，注释放开即可（layout.tsx 里的 div 也已同步删除）。 */
+/*
 .shader-scrim {
   position: fixed;
   inset: 0;
   z-index: -9;
   pointer-events: none;
-  /* 轻压暗：新 shader 最亮处与白字对比约 5.4:1，轻罩保过渡区 */
   background: rgba(0, 0, 0, 0.14);
 }
+*/
 
 /* 细颗粒覆盖层：给整体加一层胶片质感 */
 .grain {
@@ -149,11 +160,11 @@
 /* ─────────────────────────────────────────────
    排版原语
    ───────────────────────────────────────────── */
+/* 钉钉进步体只有一个字重：display 靠字距收紧 + 行高压紧拉开层级，
+   不再靠 620 这种「理想字重」（静态字体上它只会退化成 400）。 */
 .display {
   font-family: var(--font-display);
-  font-variation-settings: "SRIF" 0;
-  font-weight: 620;
-  font-stretch: 97%;
+  font-weight: 400;
   line-height: 0.98;
   letter-spacing: -0.015em;
 }
@@ -197,322 +208,394 @@
 }
 
 /* ─────────────────────────────────────────────
-   第 1 屏 <1024：上下分屏 —— 文字贴画面上方，木马居中在下半区
-   .hero-carousel 原来是「零高度」的（.carousel-fan 是 0×0，卡片全是绝对定位），
-   所以木马既不占行高、也会和文字重叠、还被屏底切掉。这里给它真实行高：
-   grid 两行 = auto(文案) + minmax(0,1fr)(木马)，1fr 吃掉剩余空间，
-   .carousel 填满这一行、place-items:center 把星形居中 ⇒ 木马自然落在下半区中间。
-   ⚠ 矮屏（375×667 这类）文案本身就快占满一屏，此时 min-height 兜底，
-   让第 1 屏略高于一屏（屏尾哨兵本来就能停在它的底部），木马不会压到文字。
-   ⚠ 这些是「非分层」样式，权重高于 Tailwind 的 utilities，所以能盖住 items-center /
-     px / pt-28 这类工具类；反过来也意味着改 page.tsx 的 utilities 时要留意这里。
+   第 1 屏：文字在上，3D 图片环在下半区（水平居中、满幅出血）
+
+   .hero 是纵向两段而不是左右两栏：
+     .hero-copy   贴顶，仍按版心对齐导航；≥1024 再分两栏（左标题 / 右正文+联系方式），
+                  把竖向空间让给环
+     .hero-stage  flex:1 吃掉剩下的全部高度，环在里面居中
+   .hero-stage 声明 container-type:size ⇒ 环能量到「还剩多少高度」（cqh），
+   窗口矮的时候环整体缩小而不是被文字压住。
+
+   ⚠ .hero 必须写死 height（不能只写 min-height）：否则 flex 子项的高度是
+     「不确定高度」，cqh 会解析成 0，环直接塌成 0 高。
+   ⚠ overflow:clip 而不是 hidden —— hidden 会让 .hero 变成滚动容器，整屏吸附会失灵。
    ───────────────────────────────────────────── */
-@media (max-width: 1023.98px) {
-  .hero {
-    align-items: stretch;
-    padding-block: 5.5rem 1.5rem;
-  }
-  .hero-grid {
-    grid-template-rows: auto minmax(0, 1fr);
-    align-items: start;
-    gap: 1rem;
-  }
+.hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100svh;
+  /* 不能有 min-height 下限（旧版 640px）：窗口比它矮时 hero 会撑出视口，
+     环的下缘连同舞台裁切线一起被推到屏幕外（矮窗口「环底部被切掉」的根因）。
+     现在 hero 恒等于 100svh，高度不够由 .hero-stage 的 flex 吸收。 */
+  min-height: 0;
+  padding-top: clamp(6rem, 13svh, 9.5rem);
+  /* 环底与屏幕底之间的呼吸位 */
+  padding-bottom: clamp(0.6rem, 1.8svh, 1.25rem);
+  overflow: clip;
+}
+
+.hero-copy {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: var(--maxw);
+  margin-inline: auto;
+  padding-inline: var(--pad);
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+.hero-title {
+  font-size: clamp(2.3rem, 4.8vw, 4rem);
+}
+
+.hero-title-en {
+  display: block;
+  margin-top: 0.4em;
+  font-size: 0.34em;
+  letter-spacing: 0.08em;
+  color: var(--color-mute);
+}
+
+/* 分割线 / 正文的上下间距跟着窗口高度收放：矮屏优先把高度让给环 */
+.hero-rule {
+  margin-block: clamp(1.15rem, 2.4svh, 1.85rem);
+  max-width: 34rem;
+}
+
+.hero-intro {
+  max-width: 36rem;
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: var(--color-mute);
+}
+
+.hero-stage {
+  position: relative;
+  /* flex:1 1 0 + min-height:0：高度只取「剩下的」，文案再长也只会把环压小、
+     不会把环顶出屏幕（旧版 auto + min-height:170px 在 820~1023 单栏区间会顶穿）。
+     padding-bottom 让环的裁切盒子再往后退一步，与 .hero 的 padding-bottom 叠加。 */
+  flex: 1 1 0;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  margin-top: clamp(1rem, 2.6svh, 2rem);
+  padding-bottom: clamp(8px, 1.6svh, 18px);
+  /* 提供 cqh：.ring 的高度上限 = 这块剩余空间 */
+  container-type: size;
+}
+
+@media (min-width: 1024px) {
   .hero-copy {
-    align-self: start;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    column-gap: clamp(2rem, 6vw, 7rem);
+    align-items: end;
   }
-  .hero-carousel {
-    align-self: stretch;
-    min-height: min(30svh, 240px);
-    /* 给 .carousel 提供 cqh：木马按「下半区高度」缩放 */
-    container-type: size;
+  .hero-side {
+    padding-bottom: 0.4rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero {
+    padding-top: 5.5rem;
+  }
+  .hero-intro {
+    font-size: 1rem;
+  }
+}
+
+/* 矮窗口（小屏手机 360×640、横屏手机、600~720 高的笔电）：
+   联系方式改成「标签在上、值在下」之后文案高了约 70px，100svh 装不下，
+   环会被 .hero 的 overflow:clip 切掉底部一截。这里把间距、字号、下半区
+   最小高度一起收一档 —— 环宁可小一点，也不能缺一块。 */
+@media (max-height: 720px) {
+  .hero {
+    padding-top: clamp(4.25rem, 10svh, 6rem);
+  }
+  .hero-title {
+    font-size: clamp(1.9rem, 4.2vw, 3.4rem);
+  }
+  .hero-rule {
+    margin-block: 0.9rem;
+  }
+  .hero-intro {
+    line-height: 1.6;
+  }
+  .hero-stage {
+    margin-top: 0.7rem;
+    padding-bottom: 8px;
+  }
+}
+
+/* 极矮窗口（<620，含横屏手机 / 分屏笔记）：文案再收一档，
+   保证下半区还能留出至少一百多像素给环，不至于被挤成 0 */
+@media (max-height: 620px) {
+  .hero {
+    padding-top: clamp(3.5rem, 9svh, 4.5rem);
+    padding-bottom: 0.5rem;
+  }
+  .hero-title {
+    font-size: clamp(1.6rem, 3.6vw, 2.4rem);
+  }
+  .hero-rule {
+    margin-block: 0.7rem;
+  }
+  .hero-intro {
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+  .hero-stage {
+    margin-top: 0.5rem;
+    padding-bottom: 6px;
   }
 }
 
 /* ─────────────────────────────────────────────
-   3D 作品旋转木马 —— 光圈 / 风车结构（复刻 titarvl）
-   N 张卡片共用一根中央竖轴：每张以自身左缘中点为轴心
-   （transform-origin: 0 50%）依次转开 360/N 度，
-   整体 scale + rotateZ + rotateX 倾斜后呈星形；
-   组件内 JS 驱动绕轴自转 + 拖拽甩动惯性
+   首屏 meta：邮箱 / 电话 / 微信 —— 每项「标签在上、值在下」上下排版
+   与第 3 屏同一份数据（site.ts）。
+
+   旧版是「左标签 + 右值」的一行（grid-template-columns:4.6em 1fr），
+   中文标签加长邮箱会把值挤得很窄；改成上下两行后值拿到整栏宽度，
+   hover ×1.5 放大也不会撞边。标签 12px，与第 3 屏 dt 同一个值。
+
+   hover 放大：dd 是块级元素、默认占满整行，补 width:fit-content 把盒子
+   收到文字宽，悬浮热区才等于文字本身；transform-origin:left center 让
+   文字左缘不动、向右长出去，缩放不参与布局。
+   时长 / 缓动沿用作品页选中项的 --wd-pop，全站同一手感。
    ───────────────────────────────────────────── */
-.carousel {
-  /* 所有内部尺寸都是 em，改这一个值就能整体缩放。
-     225% 尺寸档（= 上一档 150% 再放大 1.5 倍）；
-     perspective 同比放大（1200→1800→2700）保持透视形变一致 */
-  font-size: clamp(18px, 2.1375vw, 30.375px);
-  --cw: 19em;
-  --ch: 23.75em; /* 290×363 ≈ 4:5，与参考卡片同比例 */
-  /* 整体倾斜缩放 --s 放这里（.carousel-tilt 继承），窄屏下调；
-     --fit 是 <1024 上下分屏时「星形占可用空间的比例」
-     = 0.92 ÷ 42.7em(星形包围盒) ÷ --s，供 font-size 的 cqh/vw 项使用，
-     改 --s 时必须一起改（三个断点各一对）；
-     225% 档同一比例 0.92 也要 ×1.5 = 1.38（星形会超出那一行，正是放大的观感） */
-  --s: 0.8;
-  --fit: 0.04035;
-  width: 100%;
+.hero-meta {
   display: grid;
-  place-items: center;
-  perspective: 2700px;
-  perspective-origin: 50% 46%;
+  /* 1.15rem：上下两行之后行距要拉开，否则 3 项糊成一块 */
+  gap: 1.15rem;
+  margin-top: 2rem;
+  max-width: 36rem;
+}
+
+.hero-meta > div {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.28rem;
+}
+
+.hero-meta dt {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--color-mute);
+}
+
+.hero-meta dd {
+  margin: 0;
+  width: fit-content;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--color-ink);
+  transform-origin: left center;
+  transition: transform var(--wd-pop);
+}
+
+.hero-meta dd:hover {
+  transform: scale(1.5);
+}
+
+.hero-meta a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.hero-meta a:hover {
+  color: var(--color-ember);
+}
+
+/* ⚠ 这条必须排在 .hero-meta 基础规则之后：同权重后写者胜，
+   写进上面那个 max-height 块里会被基础规则反压回去（踩过）。 */
+@media (max-height: 720px) {
+  .hero-meta {
+    margin-top: 1rem;
+    gap: 0.72rem;
+  }
+}
+
+/* ─────────────────────────────────────────────
+   首屏 3D 图片环 —— RING（照 Framer Marketplace / RING 原版实测参数复刻）
+
+   原版 @1440×900 实测：盒子 430 高 / 卡片 140×100（圆角 12）/ 半径 450 /
+   40 张、每张步进 9° / 透视 1200px / 底座俯角 -7°。
+
+   卡片定位三步（少一步都不是这个形态）：
+     rotateY(i·9°)   转到自己的方位
+     translateZ(R)   推到半径上
+     rotateY(90deg)  卡面转 90° —— 沿着**切线**朝外，不是法线朝外
+   所以正对镜头那张是立起来的「刀刃」（画面中间那道缝），真正看清的是斜向
+   两侧一路退开的卡面，形成左右两片扇形；卡面双面可见，于是环的左右两半
+   互为镜像（原版就是这样，别加 backface-visibility:hidden，一加就塌成半边）。
+
+   四层（顺序不能换）：
+     .ring        透视容器 + 裁切（原版就是 overflow:hidden）
+     .ring-plane  底座俯角 -7°；入场时从 -73° 立起来
+     .ring-yaw    光标视差（--tilt / --yaw 由 JS 每帧写入）
+     .ring-wheel  只有它在自转，卡片方位角是静态的
+
+   ⚠ 尺寸只有一个真源：--h（盒子高）⇒ --u = 原版 1px @1440。内部所有尺寸都写成
+     calc(n * var(--u))，连 perspective 也跟着缩 —— 缩放后形变比例与原版一致，
+     不会出现「环变小了但透视还是 1200px、近处那张忽然变大」的问题。
+   ───────────────────────────────────────────── */
+.ring {
+  /* 高：按视口宽等比（32vw），上限 494px（= --u 1.15），再由 .hero-stage 的剩余高度封顶。
+     系数不是拍脑袋：环的投影宽 ≈ 2.69×盒高（原版 1157/430），
+     32vw 刚好让环占满约 86% 视口宽，两侧各留 7% 呼吸。 */
+  --h: min(32vw, 100cqh);
+  /* 1u = 原版 1px @1440 */
+  --u: calc(var(--h) / 430);
+  --cw: calc(140 * var(--u)); /* 卡片宽 */
+  --ch: calc(100 * var(--u)); /* 卡片高（原版 1.4:1，素材也按 1.4:1 裁好） */
+  --r: calc(450 * var(--u)); /* 环半径 */
+  --yaw: 0deg;
+  --tilt: 0deg;
+  /* 倾角补偿（单位 u，由 Ring3D.tsx 每帧写） */
+  --lift: 0;
   position: relative;
-  /* 放大后星形（约 34.3em 见方）比「右列」宽出约 1/3，会盖到左列文案上。
-     让整个木马按 --dx / --dy 平移，把左缘让出文案区、右侧出血交给
-     main 的 overflow-x:clip 裁掉。
-     桌面：右移量随视口连续收敛 —— 视口越窄、右列越窄、需要的让位越多，
-     到 1590px 以上版心已能容纳（星形左缘天然落在文案之后）就归零；
-     用 clamp 而不是媒体查询断点，1599↔1600 这种边界才不会让木马跳一下。
-     <1024 改为上下分屏 ⇒ 改用向下让位（星形高 = 1.38 倍行高，上溢那半
-     ≈ 0.19 × min(100vw,100cqh)），避免星形顶到上方的 meta 文案。 */
-  --dx: 0px;
-  --dy: 0px;
-  translate: var(--dx) var(--dy);
-  /* pan-y 而不是 none：<1024 时木马独占下半区、占位很大，
-     none 会让这一整片区域在触屏上「吞掉」纵向滑动；水平拖拽仍然可用 */
+  width: 100%;
+  height: var(--h);
+  /* 俯视时近侧被透视放大、远侧被缩小，投影的重心比环心低 58u。
+     整体上移 58u 让「看得见的那条带子」在舞台里居中 ——
+     ⚠ 只能平移这个透视盒子本身；平移 .ring-wheel 会改变环心与消失点的
+     相对位置，投影立刻被压扁（实测带子高度 295 → 233）。 */
+  /* --lift：光标落到画面下半时视差把环压低 6°，近端卡片会往下坠 ~10u/度
+     （实测 6° 坠 62u），这里按 9u/度 抬回去，带子的下缘才不会被屏幕底吃掉。 */
+  translate: 0 calc((-58 - var(--lift, 0)) * var(--u));
+  perspective: calc(1200 * var(--u));
+  perspective-origin: 50% 50%;
+  /* ⚠ 不能用 overflow:hidden（原版是切的）。视差把环压低 6° 时，近端卡片会
+     探出盒子下缘 50~90px，一裁就是「环底部被切平」那个 bug。
+     放开来让卡片探出去，底气来自：盒子外还有 .hero-stage 与 .hero 的
+     padding-bottom，加上上面的 --lift 补偿，探出的部分仍在屏内。 */
+  overflow: visible;
+  /* pan-y 而不是 none：环占位不小，none 会让这一片在触屏上吞掉纵向滑动 */
   touch-action: pan-y;
   cursor: grab;
   user-select: none;
   -webkit-user-select: none;
 }
 
-.carousel.dragging {
+.ring.dragging {
   cursor: grabbing;
 }
 
-/* 星形背后一团冷光，把形态从深底里托出来。
-   min() 卡住上限：不超出容器宽、不超出 72svh，避免撑出横向滚动 */
-.carousel::before {
-  content: "";
+/* 底座俯角：-7° 只露一点点顶面，环口读得出来又不至于翻成一只碗 */
+.ring-plane {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transform: rotateX(-7deg);
+  /* 入场：整圈从近水平（-73°）立起来 */
+  animation: ring-rise 900ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+@keyframes ring-rise {
+  from {
+    transform: rotateX(-73deg);
+  }
+}
+
+/* 视差层：JS 每帧写 --tilt / --yaw（弹簧缓动在 JS 里做，这里不要 transition） */
+.ring-yaw {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--tilt)) rotateY(var(--yaw));
+}
+
+/* 自转层：0×0，定位原点 = 环心 */
+.ring-wheel {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: min(58em, 100%);
-  height: min(42em, 72svh);
-  transform: translate(-50%, -50%);
-  background: radial-gradient(
-    closest-side,
-    rgba(27, 81, 189, 0.26),
-    transparent 72%
-  );
-  filter: blur(2em);
-  pointer-events: none;
-}
-
-/* titarvl 的倾斜构图：先绕 Z 侧倾，再绕 X 俯仰。
-   --fx / --fy 由组件写入（鼠标位置驱动的倾斜跟随），未启用时为 0 */
-.carousel-tilt {
-  --rz: -18deg;
-  --rx: -40deg;
-  transform-style: preserve-3d;
-  transform: scale(var(--s)) rotateZ(var(--rz))
-    rotateX(calc(var(--rx) + var(--fx, 0deg))) rotateY(var(--fy, 0deg));
-}
-
-/* 自转层：0×0 的定位原点，即整个星形的轴心 */
-.carousel-fan {
-  position: relative;
   width: 0;
   height: 0;
   transform-style: preserve-3d;
   will-change: transform;
 }
 
-/* 卡片：轴心 = 左缘中点，N 张全部叠在同一点上再各自转开 */
-.carousel-card {
+/* 每张卡的「槽位」：方位角 + 半径 + 切向朝向。方位角静态，转的是上面的 wheel。
+   入场：从略内收的半径处翻起来（rotateX -90° 时卡片躺平），按 --i 错峰 */
+.ring-slot {
   position: absolute;
   left: 0;
   top: 0;
   width: var(--cw);
   height: var(--ch);
-  margin: 0;
-  transform-origin: 0 50%;
-  transform: translateY(-50%) rotateY(calc(var(--i) * var(--theta)));
+  margin-left: calc(var(--cw) / -2);
+  margin-top: calc(var(--ch) / -2);
   transform-style: preserve-3d;
-  border-radius: 0.7em;
-  box-shadow: 0 1.6em 3.4em -1.2em rgba(0, 0, 0, 0.85);
+  transform: rotateY(var(--ang)) translateZ(var(--r)) rotateY(90deg);
+  animation: ring-card-in 900ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: calc(150ms + var(--i) * 16ms);
 }
 
-/* 正反两个面都做出来：参考站里背面的卡片是实色深底，不是镂空 */
-.carousel-face {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  overflow: hidden;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+@keyframes ring-card-in {
+  from {
+    opacity: 0;
+    transform: rotateY(var(--ang)) translateZ(calc(var(--r) * 0.82)) rotateY(90deg)
+      rotateX(-90deg);
+  }
 }
 
-/* 正反两面共用同一套材质：底色渐变 + 盘面 + 颗粒 + 边框，只有朝向不同 */
-.carousel-face-front,
-.carousel-face-back {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: linear-gradient(165deg, #0b1f4f 0%, #030815 72%);
-}
-
-.carousel-face-back {
-  transform: rotateY(180deg);
-}
-
-.carousel-back-mark {
-  position: relative;
-  z-index: 2;
-  padding: 1.1em;
-  font-family: var(--font-mono);
-  font-size: 0.72em;
-  letter-spacing: 0.2em;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-/* 盘面：真实作品图铺满，CSS 占位渐变作为图片加载前的兜底 */
-.carousel-plate {
+/* 卡面：白色底板 + 圆角裁切。⚠ 故意不做 backface-visibility:hidden ——
+   卡片是切向朝向的，环有一半永远背对镜头；两面都画出来才是原版那种
+   「左右两片对称扇面、中间一道缝」的形态（设成 hidden 会塌成半边）。
+   背面看到的是镜像图，原版同样如此。 */
+.ring-face {
   position: absolute;
   inset: 0;
   overflow: hidden;
+  border-radius: calc(12 * var(--u));
+  background: #fff;
 }
 
-.carousel-plate-img {
+/* 图片 fill 满卡片：原图是 16:9 的整页稿，这里按卡片 1.4:1 居中裁切，
+   不留白边、也不拉伸（素材已预先裁成 1.4:1，这里只是双保险） */
+.ring-photo {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   display: block;
+  -webkit-user-drag: none;
 }
 
-.carousel-plate-blob {
-  position: absolute;
-  inset: -22%;
-  background:
-    radial-gradient(
-      closest-side at 32% 34%,
-      hsl(var(--hue) 84% 58% / 0.9),
-      transparent 68%
-    ),
-    radial-gradient(
-      closest-side at 72% 66%,
-      hsl(calc(var(--hue) + 26) 88% 62% / 0.6),
-      transparent 72%
-    ),
-    conic-gradient(
-      from calc(var(--i) * 42deg),
-      hsl(var(--hue) 72% 46% / 0.5),
-      transparent 38%,
-      hsl(calc(var(--hue) - 34) 76% 54% / 0.42),
-      transparent 76%
-    );
-  filter: blur(0.45em) saturate(1.2);
-}
-
-/* 真实图片上把颗粒压淡：占位渐变需要它撑质感，照片上 0.5 会显脏 */
-.carousel-face-front .carousel-plate-grain,
-.carousel-face-back .carousel-plate-grain {
-  opacity: 0.22;
-}
-
-/* 背面也贴真实作品图：压一层品牌深色，保证编号文字可读 */
-.carousel-face-back .carousel-plate::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background: linear-gradient(
-    165deg,
-    rgba(11, 31, 79, 0.42),
-    rgba(3, 8, 21, 0.62)
-  );
-}
-
-.carousel-plate-grain {
-  position: absolute;
-  inset: 0;
-  opacity: 0.5;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
-}
-
-.carousel-caption {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  gap: 0.28em;
-  padding: 1.1em 1em 1em;
-  background: linear-gradient(
-    to top,
-    rgba(3, 8, 21, 0.94) 0%,
-    rgba(3, 8, 21, 0.55) 55%,
-    transparent 100%
-  );
-}
-
-.carousel-index {
-  font-family: var(--font-mono);
-  font-size: 0.78em;
-  letter-spacing: 0.16em;
-  color: var(--color-ember);
-}
-
-.carousel-title {
-  font-family: var(--font-display);
-  font-variation-settings: "SRIF" 0;
-  font-weight: 620;
-  font-stretch: 97%;
-  font-size: 1.75em;
-  line-height: 1;
-  color: var(--color-ink);
-}
-
-/* 小号英文标签统一 500：Agile 可变轴默认落在 Thin，不显式给字重会过细 */
-.carousel-index,
-.carousel-type,
-.carousel-back-mark {
-  font-weight: 500;
-}
-
-.carousel-type {
-  font-family: var(--font-mono);
-  font-size: 0.66em;
-  letter-spacing: 0.2em;
-  color: var(--color-mute);
-}
-
-@media (max-width: 1024px) {
-  .carousel {
-    --s: 0.78;
-    --fit: 0.0414;
+/* 原版的半径三档（卡片尺寸不变，只改半径）：手机 330 / 平板 400 / 桌面 450。
+   半径收小 ⇒ 投影变窄（2R+卡宽：800 / 940 / 1040 u），所以盒子高度系数要跟着放大，
+   三档的环都保持「约 86% 视口宽」。这是原版在窄屏的取舍，只是我们连盒高一起算。 */
+@media (min-width: 810px) and (max-width: 1199.98px) {
+  .ring {
+    --r: calc(400 * var(--u));
+    --h: min(39vw, 100cqh);
   }
 }
 
-@media (max-width: 640px) {
-  .carousel {
-    --s: 0.62;
-    --fit: 0.05205;
-    --rz: -16deg;
-    --rx: -38deg;
+@media (max-width: 809.98px) {
+  .ring {
+    --r: calc(330 * var(--u));
+    --h: min(48vw, 100cqh);
   }
 }
 
-/* 放大 1.5 倍后的「让位」（机制见 .carousel 里 --dx 那段注释）：
-   桌面按视口连续右移，1700px 以上归零。 */
-@media (min-width: 1024px) {
-  .carousel {
-    --dx: clamp(0px, calc((1590px - 100vw) * 0.75), 5.2em);
+@media (prefers-reduced-motion: reduce) {
+  .ring-plane,
+  .ring-slot {
+    animation: none !important;
   }
-}
-
-/* <1024：第 1 屏上下分屏 —— 木马填满 .hero-carousel 那一行
-   （该层是 container-type:size），并按 min(视口宽, 行高) 缩放：
-   高窗口放大、矮窗口缩小，永远居中在下半区。
-   星形包围盒 ≈ 42.7em×--s 且近似正方，所以两个方向共用同一个 --fit。
-   ⚠ 这条必须排在基础 .carousel 规则之后：媒体查询不提升权重，写在前面会被覆盖。 */
-@media (max-width: 1023.98px) {
-  .carousel {
-    height: 100%;
-    font-size: calc(var(--fit) * min(100vw, 100cqh));
-    --dy: calc(min(100vw, 100cqh) * 0.19);
+  .ring {
+    cursor: default;
   }
 }
 
@@ -679,8 +762,7 @@
 .deck-title {
   margin: 0;
   font-family: var(--font-display);
-  font-weight: 620;
-  font-stretch: 97%;
+  font-weight: 400;
   font-size: clamp(1.1rem, 1.5vw, 1.4rem);
   line-height: 1.15;
   color: var(--color-ink);
@@ -865,7 +947,422 @@
 }
 
 /* ─────────────────────────────────────────────
-   第 2 屏：3D 品牌球（Framer 3D Globe Gallery 同构）
+   第 2 屏：3D 卡片长卷（对位 Framer「sleeve」实站效果）
+
+   ★ 几何模型（照参考站逆向出来的，别改回「各转各的角度」）：
+     所有卡片**恒定 rotateY(90°)**——像一排立着的鳍片/书立，沿 x 轴等距排开、
+     z 全为 0。两侧卡片「看起来朝观察者转」不是卡片转了，是**离轴透视**：
+     视线与鳍片的夹角随离屏心距离增大，露出的画面越来越多
+     （正中只剩 ~15px 书脊，边缘露出 ~70% 画面）。
+     透视原点压在**卡片顶边**上，于是顶边水平、底边向后斜——海报墙向后倒。
+     （第一版按「各转各的角度」做，透视纵深全被人为压平——就是那次返工。）
+
+   ⚠ 卡片是**双面**的（front / back 各一张图）：转过 90° 后屏心右侧的卡
+     露出的是背面，不给背面就只剩一块底板。
+
+   尺寸单一真源：--cw ⇒ 卡高 / 间距 / 圆角 / 字号 / 透视全部派生。
+     --gap-k 卡片中心间距 ÷ 卡宽（参考站 160/380 = 0.42）。这里取 0.68：
+             一要给卡顶 24px 卡名留横向空间（名字 ~96px ≤ 0.68×最小卡宽 165 ≈ 112px），
+             二要压住远端鳍片的投影重叠宽度。残余的重叠由 render 里每帧写入的
+             zIndex 精确排序兜底（离屏心越近越在前），不再依赖「投影不重叠」。
+     透视    4 × 卡宽（参考站 1500/380 ≈ 3.95）
+   ───────────────────────────────────────────── */
+.cards-screen {
+  --cw: min(27svh, max(165px, 13.6vw));
+  --ch: calc(var(--cw) * 1.5);
+  --gap-k: 0.68;
+  --gap: calc(var(--cw) * var(--gap-k));
+  height: 100svh;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding-top: clamp(5.25rem, 12svh, 8rem);
+  padding-bottom: clamp(1.25rem, 3.2svh, 2.25rem);
+  overflow: clip;
+}
+
+.cards-head {
+  position: relative;
+  z-index: 3;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.9rem 2rem;
+  flex-wrap: wrap;
+}
+
+.cards-title {
+  margin: 0.55rem 0 0;
+  font-size: clamp(1.55rem, 2.7vw, 2.5rem);
+}
+
+.cards-hint {
+  margin: 0;
+  text-align: right;
+  line-height: 1.7;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-mute);
+}
+
+.cards-hint span {
+  display: block;
+  color: rgba(255, 255, 255, 0.32);
+}
+
+/* 舞台：卡名挂在卡上方，上边距要留出那一行（16px 字 + 呼吸带）；
+   下边距比常规略大 —— 透视把卡片底边往外推了约 0.11 卡宽，
+   整块视觉重心本来就偏下，多留一点把它顶回去。 */
+.cards-stage {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  margin-top: clamp(0.9rem, 2.4svh, 1.9rem);
+  margin-bottom: clamp(22px, 3.6svh, 38px);
+}
+
+/* 带子后面的蓝色辉光：卡片是「立在光里」而不是浮在虚空。
+   这是光，不是蒙版 —— 用全站那支蓝，不做压黑。 */
+.cards-stage::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 54%;
+  z-index: 0;
+  width: min(94vw, calc(var(--cw) * 6.2));
+  aspect-ratio: 1.7;
+  translate: -50% -50%;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    closest-side,
+    rgba(26, 128, 200, 0.2),
+    rgba(9, 58, 110, 0.09) 58%,
+    transparent 76%
+  );
+}
+
+/* 长卷本体：透视 4×卡宽（参考站 1500/380≈3.95）。
+   透视原点压在卡片顶边（卡片垂直居中 → 顶边在 50% − ch/2 处）：
+   顶边保持水平、底边向后收——参考站的「海报墙向后倒」就是这一行。 */
+.band {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  perspective: calc(var(--cw) * 4);
+  perspective-origin: 50% calc(50% - var(--ch) / 2);
+  touch-action: pan-y; /* 竖滑交给翻屏，横滑才是拖带子 */
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.band.is-drag {
+  cursor: grabbing;
+}
+
+/* 键盘焦点：3D 区域画不了常规 outline，用一条居中的虚框示意「这里可以左右动」 */
+.band:focus-visible {
+  outline: none;
+}
+
+.band:focus-visible::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--cw);
+  height: calc(var(--ch) * 1.02);
+  translate: -50% -50%;
+  border: 1px dashed rgba(255, 255, 255, 0.34);
+  border-radius: calc(var(--cw) * 0.05);
+  pointer-events: none;
+}
+
+/* 卡：定位在舞台中心，transform 全部由 JS 每帧写（translate3d + rotateY）
+
+   ★ 卡是**实体盒**，不是两张纸。照参考站逆出来的结构重建：
+       正面 #161616 + 背面 #5c5c5c（各推 ±厚/2）
+       + 4 条直边 + 每个角 4 段「弦」（90° 切 4 段，2r·sin11.25°）
+     厚度 8.39/380 = 2.2% 卡宽，圆角 15/380 = 3.9% 卡宽。
+
+   ⚠ 圆角必须用「弦」去近似，不能只给 border-radius：近端截面在上、下角要
+     顺着圆弧弯进卡面，才读得出「一块板」；只做成方头直线的话，侧对时就是
+     一条描边，卡看起来仍是两张纸。
+   ⚠ backface-visibility:hidden 是必须的：卡恒为 rotateY(90°)，只有近端那面墙
+     的法线朝向观察者，远端那面被板身挡住。不剔除就会两头各出一条灰边。
+*/
+.card3d {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  /* 板厚：参考站 8.39/380 = 2.2%，这里提到 2.6% —— 我们的卡在屏上只有
+     ~110px 宽，2.2% 时截面只剩 6px，读不出厚度 */
+  --ct: calc(var(--cw) * 0.026);
+  --cr: calc(var(--cw) * 0.039); /* 圆角半径 */
+  /* 圆弧每段弦长：比理论弦长 0.390r 放大 14%，让相邻两段互相压住 ——
+     等长共边会因抗锯齿在接缝处漏出背景，看上去像一圈圈台阶 */
+  --cl: calc(var(--cr) * 0.445);
+  width: var(--cw);
+  height: var(--ch);
+  margin-left: calc(var(--cw) / -2);
+  margin-top: calc(var(--ch) / -2);
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* 正 / 背面：各贴厚度的一端，背面先转 180° 把法线翻过来再推回自己那侧。
+   两面都用**同一张素材图**（card-3d/*.webp），不自创版面：
+   卡转到 90° 时右半屏露的是背面，看到的仍是这张图的正立画面。
+   ⚠ 背面**不要**再叠 scaleX(-1)：卡从 90° 翻到 180° 时背板始终正面朝向观察者
+   （法线从 −X 转到 +Z），再加镜像两面就反了。 */
+.card3d-face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: var(--cr);
+  background: #131a24;
+  backface-visibility: hidden;
+  /* 内侧一道极窄的暗边：卡面与截面交界处的缝，参考站也有 */
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 calc(var(--cw) * 0.016) calc(var(--cw) * 0.05) rgba(0, 0, 0, 0.5);
+}
+
+.card3d-face.front {
+  transform: translateZ(calc(var(--ct) / 2));
+}
+
+.card3d-face.back {
+  transform: rotateY(180deg) translateZ(calc(var(--ct) / 2));
+}
+
+/* ── 侧壁 ──
+   基础色取参考站实测的 #5c5c5c，再叠一道「沿厚度方向」的柔和明暗：
+   暗 22% → 透明 27% → 亮 14% 75% → 暗 16%，于是截面中间偏外有一道高光。
+   参考站截面实测亮度剖面（由内到外）：75→88→104→91→76，用的就是它那组色标；
+   之前用 #b3bbc9 峰值 181 太亮，看起来是一条白描边而不是板厚。 */
+.card3d-wall {
+  position: absolute;
+  backface-visibility: hidden;
+  background-color: #5c5c5c;
+  background-repeat: no-repeat;
+}
+
+.card3d-wall.v,
+.card3d-wall.a {
+  width: var(--ct);
+  background-image: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.22) 0%,
+    rgba(0, 0, 0, 0) 27%,
+    rgba(255, 255, 255, 0.14) 75%,
+    rgba(0, 0, 0, 0.16) 100%
+  );
+}
+
+.card3d-wall.h {
+  height: var(--ct);
+  background-image: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.22) 0%,
+    rgba(0, 0, 0, 0) 27%,
+    rgba(255, 255, 255, 0.14) 75%,
+    rgba(0, 0, 0, 0.16) 100%
+  );
+}
+
+/* 直边长度要减掉两个圆角，剩下的圆弧由 .a 段接住 */
+.card3d-wall.v {
+  height: calc(100% - var(--cr) * 2);
+}
+
+.card3d-wall.h {
+  width: calc(100% - var(--cr) * 2);
+}
+
+.card3d-wall.a {
+  height: var(--cl);
+}
+
+.card3d-wall.v,
+.card3d-wall.a {
+  transform: translate(-50%, -50%) rotateZ(var(--a, 0deg)) rotateY(90deg);
+}
+
+.card3d-wall.h {
+  transform: translate(-50%, -50%) rotateZ(var(--a, 0deg)) rotateX(90deg);
+}
+
+/* 四条直边：left/top 给的是「这条边所在的位置」，再靠 translate(-50%,-50%)
+   把元素中心压上去 —— 于是墙的平面正好落在卡片的边界上 */
+.card3d-wall.wl {
+  --a: 180deg;
+  left: 0;
+  top: 50%;
+}
+
+.card3d-wall.wr {
+  --a: 0deg;
+  left: 100%;
+  top: 50%;
+}
+
+.card3d-wall.wt {
+  --a: 0deg;
+  left: 50%;
+  top: 0;
+}
+
+.card3d-wall.wb {
+  --a: 180deg;
+  left: 50%;
+  top: 100%;
+}
+
+/* 四角圆弧：每角 4 段，θm = 11.25° / 33.75° / 56.25° / 78.75°
+   （--c = cosθm、--s = sinθm、--d = θm，纯常量，写死在 CSS 里不占 JS） */
+.card3d-wall.c1 {
+  --c: 0.98079;
+  --s: 0.19509;
+  --d: 11.25deg;
+}
+
+.card3d-wall.c2 {
+  --c: 0.83147;
+  --s: 0.55557;
+  --d: 33.75deg;
+}
+
+.card3d-wall.c3 {
+  --c: 0.55557;
+  --s: 0.83147;
+  --d: 56.25deg;
+}
+
+.card3d-wall.c4 {
+  --c: 0.19509;
+  --s: 0.98079;
+  --d: 78.75deg;
+}
+
+/* 法线 n=(cosθ, ±sinθ)，rotateZ(φ) 把 +x 转到 φ 方向：
+   右上 φ=-θ、左上 φ=180+θ、右下 φ=θ、左下 φ=180-θ */
+.card3d-wall.tr {
+  --a: calc(0deg - var(--d));
+  left: calc(100% - var(--cr) + var(--cr) * var(--c));
+  top: calc(50% - var(--ch) / 2 + var(--cr) - var(--cr) * var(--s));
+}
+
+.card3d-wall.tl {
+  --a: calc(180deg + var(--d));
+  left: calc(var(--cr) - var(--cr) * var(--c));
+  top: calc(50% - var(--ch) / 2 + var(--cr) - var(--cr) * var(--s));
+}
+
+.card3d-wall.br {
+  --a: var(--d);
+  left: calc(100% - var(--cr) + var(--cr) * var(--c));
+  top: calc(50% + var(--ch) / 2 - var(--cr) + var(--cr) * var(--s));
+}
+
+.card3d-wall.bl {
+  --a: calc(180deg - var(--d));
+  left: calc(var(--cr) - var(--cr) * var(--c));
+  top: calc(50% + var(--ch) / 2 - var(--cr) + var(--cr) * var(--s));
+}
+
+.card3d-face img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+/* 卡名层：**不参与 3D**（跟着卡片一起转的话，45° 时文字会被压成一条）。
+   位置由 JS 写 translate3d，只做水平跟随；透明度按离中线多远衰减。 */
+.cards-caps {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.cards-cap {
+  margin: 0;
+  position: absolute;
+  left: 50%;
+  /* 卡名挂在卡片上方：卡片顶边正好压在透视原点上（50% − ch/2），投影不外扩，
+     所以不需要任何补偿，留 0.09 卡宽的呼吸带就够 */
+  top: calc(50% - var(--ch) / 2 - var(--cw) * 0.09);
+  translate: -50% -100%;
+  /* 24px 的四字名 ≈96px 宽，编号再排同一行就是 ~130px，比 1024 档的卡位间距
+     （0.68×165≈112px）还宽 —— 改成「编号在上、名字在下」的竖排小展签 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.16em;
+  white-space: nowrap;
+  text-align: center;
+  font-size: 24px;
+  line-height: 1.15;
+  color: var(--color-ink);
+  opacity: 0;
+  will-change: transform, opacity;
+  text-shadow: 0 1px 16px rgba(0, 0, 0, 0.8);
+}
+
+.cards-cap .n {
+  font-family: var(--font-mono);
+  font-size: 0.58em;
+  line-height: 1;
+  letter-spacing: 0.18em;
+  text-indent: 0.18em;
+  color: rgba(255, 255, 255, 0.46);
+}
+
+/* 窄屏：卡按同比例收一档；间距比例放宽到 .62 —— 24px 名字宽 ~96px，
+   0.42 档的间距（0.42×164≈69px）放不下，卡名会咬在一起 */
+@media (max-width: 700px) {
+  .cards-screen {
+    --cw: min(26svh, 42vw);
+    --gap-k: 0.62;
+  }
+
+  .cards-stage {
+    margin-bottom: clamp(16px, 3svh, 32px);
+  }
+
+  /* 窄屏卡位间距 0.62×164≈102px，竖排展签加编号太高、会顶到页头 —— 只留名字 */
+  .cards-cap .n {
+    display: none;
+  }
+}
+
+/* 更窄：眉标与提示挤成两行时，标题靠左排，别抢卡片的高度 */
+@media (max-width: 640px) {
+  .cards-head {
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .cards-hint {
+    text-align: left;
+  }
+
+  .cards-hint span {
+    display: inline;
+    margin-left: 0.5em;
+  }
+}
+
+/* ─────────────────────────────────────────────
+   第 3 屏：3D 品牌球（Framer 3D Globe Gallery 同构）
    14 品牌 ×3 = 42 张卡 Fibonacci 铺满球面，背面卡片可见（镜像翻正）
    深度驱动 模糊/透明度/缩放；点击锁定并转正，hover/回车同样聚焦
    ───────────────────────────────────────────── */
@@ -1307,7 +1804,6 @@
   font-family: var(--font-display);
   font-size: clamp(1.15rem, 1.7vw, 1.7rem);
   font-weight: 500;
-  font-stretch: 96%;
   line-height: 1.18;
   letter-spacing: 0.005em;
   white-space: nowrap;
