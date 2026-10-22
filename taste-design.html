@@ -828,16 +828,34 @@ main{position:relative;z-index:1;overflow-x:clip}
    把纵向滚动的 .wd-feed 改造成横向：滚动轴从 y 换成 x，内容 .wd-feed-in 从
    「单列竖排」改成「横向 flex」，每个 .wd-work（一个作品）是一个横向单元。 */
 .cards-works .wd-feed-wrap{min-height:0;flex:1 1 auto;min-width:0;width:100%}
-.cards-works .wd-feed{min-height:0;overflow-x:auto;overflow-y:hidden;
-  scrollbar-width:thin;
-  scrollbar-color:rgba(255,255,255,.25) transparent}
-/* 图片流底部横向滚动条：默认 #FFF 25%，悬浮 #FFF 50%。
-   WebKit（Chrome/Edge/Safari）用伪元素实现 hover 变色；Firefox 的
-   scrollbar-color 不支持 hover 态，保持 25% 静态即可。 */
+/* ⚠ 这里**故意不写** scrollbar-width / scrollbar-color。
+   Chromium 的规则是「标准滚动条属性一旦声明，::-webkit-scrollbar 整组被忽略」，
+   两者同时存在时 height:6px 不生效，滚动条会退回 thin 的 ~11px
+   （实测 offsetHeight−clientHeight = 11，而不是 6）。所以精确尺寸必须只走伪元素。
+   Firefox 拿不到 ::-webkit-scrollbar，用 @supports 单独兜底到 thin + 25% 白。 */
+.cards-works .wd-feed{min-height:0;overflow-x:auto;overflow-y:hidden}
+@supports not selector(::-webkit-scrollbar){
+  .cards-works .wd-feed{scrollbar-width:thin;
+    scrollbar-color:rgba(255,255,255,.25) transparent}
+}
+/* 图片流底部横向滚动条：常态 6px，鼠标悬浮加粗到 10px；
+   颜色默认 #FFF 25%，悬浮 #FFF 50%。
+   WebKit（Chrome/Edge/Safari）用伪元素控制；Firefox 的 scrollbar-width 只有
+   auto/thin/none 三档，没有尺寸与 hover 态，保持 thin + 25% 静态即可。 */
 .cards-works .wd-feed::-webkit-scrollbar{height:6px;width:0}
+/* ⚠ 用「容器 :hover」触发，不用 `::-webkit-scrollbar:hover`：
+   后者在 Chrome 里对滚动条伪元素的 hover 命中很不稳定（指针停在条上也可能不算），
+   容器态才是可靠的那一侧。代价是鼠标一进图片流区域就加粗，不是非得压到条上。
+   ⚠ 这里没有过渡，是瞬时的：scrollbar 伪元素不吃 transition/animation，
+   高度变化天生就是硬切。要平滑只能自己画一条假滚动条接管滚动位置，不值当。
+   已知副作用：条从 6 涨到 10，内容区高度少 4px，画面会轻跳一下 ——
+   这是「改尺寸」本身的代价，不是 bug。 */
+.cards-works .wd-feed:hover::-webkit-scrollbar{height:10px}
 .cards-works .wd-feed::-webkit-scrollbar-track{background:transparent}
+/* 圆角给到 999px 而不是写死 3px：6px 时是半圆药丸，10px 时自动变大一圈，
+   两种高度都不用改数值。 */
 .cards-works .wd-feed::-webkit-scrollbar-thumb{
-  background:rgba(255,255,255,.25);border-radius:3px}
+  background:rgba(255,255,255,.25);border-radius:999px}
 .cards-works .wd-feed::-webkit-scrollbar-thumb:hover{
   background:rgba(255,255,255,.5)}
 /* 内容整体右移 --ws-inset：第一件作品的左缘落在渐变淡出的终点上（静态不压图），
@@ -1216,9 +1234,18 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
    一份文档流高度。外面这层 relative 就是为它准备的，absolute inset:0 精确盖住整块。
    （下带 .wd-lq-bot 不在这儿 —— 它挂在 .wdetail 一级，见下面 Liquid Scroll 那段。） */
 .wd-feed-wrap{position:relative;flex:1 1 auto;min-width:0;min-height:0;display:flex}
+/* ⚠ 这里**不写** scrollbar-width:none。Chromium 的规则是「标准滚动条属性一旦声明，
+   ::-webkit-scrollbar 整组被忽略」，一旦在这条基础规则里写 none，作品页那条
+   `.cards-works .wd-feed::-webkit-scrollbar{height:6px}` 就彻底失效
+   （实测：同时声明 scrollbar-width:thin 时 barH 是 11 而非 6；声明 none 时直接 0）。
+   本页的隐藏改由下面的 `::-webkit-scrollbar{width:0;height:0}` 承担，
+   Firefox 拿不到伪元素，才用 @supports 兜底回 scrollbar-width:none。 */
 .wd-feed{position:relative;flex:1 1 auto;min-width:0;min-height:0;overflow-y:auto;
-  overscroll-behavior:contain;scrollbar-width:none;-ms-overflow-style:none}
+  overscroll-behavior:contain}
 .wd-feed::-webkit-scrollbar{width:0;height:0}
+@supports not selector(::-webkit-scrollbar){
+  .wd-feed{scrollbar-width:none;-ms-overflow-style:none}
+}
 
 /* ── Liquid Scroll：渐进模糊（只在这一页）──
    浏览器没有「渐变 blur」，所以用 6 层 backdrop-filter 叠出来：每层的 blur 是固定的
