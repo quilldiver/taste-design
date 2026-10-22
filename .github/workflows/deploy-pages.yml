@@ -1,7 +1,11 @@
-name: Deploy Next.js site to GitHub Pages
+name: Deploy static site to GitHub Pages
+
+# 发布源 = 单文件版 taste-design.html（设计真相）。
+# Next 源码保留在 taste-design/，不再参与发布 —— 它与单文件版已经分叉，
+# 详见 README「发布源」一节。
 
 on:
-  # 每次推到 main 自动构建并发布（对应「以后任何修改都同步上线」）
+  # 每次推到 main 自动发布（对应「以后任何修改都同步上线」）
   push:
     branches: [main]
   # 也允许在 Actions 面板手动点一次
@@ -20,30 +24,73 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: taste-design
-    env:
-      # Pages 项目站点挂在 /<仓库名> 子路径下，必须和仓库名一致。
-      # 改仓库名时要同步改这里，否则资源会 404。
-      NEXT_PUBLIC_BASE_PATH: /taste-design
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: taste-design/package-lock.json
+      # 站点根目录 = 单文件版 + 它运行时读取的素材目录。
+      # 单文件版的资源引用全部是相对路径（ring/ works/ partners/ card-3d/），
+      # 因此挂在 /<仓库名>/ 子路径下不需要任何前缀改写。
+      - name: Assemble site
+        run: |
+          set -euo pipefail
+          rm -rf _site
+          mkdir -p _site
 
-      - name: Install dependencies
-        run: npm install
+          cp taste-design.html _site/index.html
+          cp favicon.ico _site/favicon.ico
 
-      # next build 会顺带做 TypeScript 类型检查；产物输出到 taste-design/out
-      - name: Build (static export)
-        run: npm run build
+          # 只复制运行时真正会用到的四个目录：
+          #   ring/      首屏 3D 图片环（40）
+          #   works/     作品图（107）
+          #   card-3d/   第二屏卡片（7）
+          #   partners/  泡泡池的品牌球（14）
+          # logo/ card/ carousel/ 是更早迭代的素材，单文件版不引用，不发布。
+          for d in ring works card-3d partners; do
+            test -d "$d" || { echo "::error::缺少素材目录 $d"; exit 1; }
+            cp -R "$d" "_site/$d"
+          done
+
+          # 1.0 存档：保持 <站点根>/v1/ 可访问
+          if [ -d taste-design/public/v1 ]; then
+            mkdir -p _site/v1
+            cp -R taste-design/public/v1/. _site/v1/
+          fi
+
+          echo "── 站点内容 ──"
+          du -sh _site
+          ls -1 _site
+
+      # 发不出去比发错了更麻烦，所以发布前做一次硬校验
+      - name: Verify assets
+        run: |
+          set -euo pipefail
+          cd _site
+
+          test -f index.html
+          test -f favicon.ico
+          for d in ring works card-3d partners; do
+            test -d "$d" || { echo "::error::缺少目录 $d"; exit 1; }
+          done
+
+          # 抽出 HTML 里写死的相对路径引用，逐个确认文件存在。
+          # 排除 JS 里的字符串拼接片段（形如 src="card-3d/'+it.f+'.webp"），
+          # 它们不是静态文件路径，单独由下面的目录检查兜住。
+          grep -oE '(src|href)="[^"#:]+\.(webp|png|jpg|svg|ico)"' index.html \
+            | sed -E 's/^(src|href)="//; s/"$//' | sed 's#^\./##' \
+            | grep -vE "['\"+$]" | sort -u > /tmp/refs.txt || true
+
+          miss=0
+          while IFS= read -r p; do
+            [ -z "$p" ] && continue
+            if [ ! -f "$p" ]; then
+              echo "::error file=index.html::缺少资源 $p"
+              miss=$((miss + 1))
+            fi
+          done < /tmp/refs.txt
+
+          echo "静态引用 $(wc -l < /tmp/refs.txt | tr -d ' ') 条，缺失 $miss 条"
+          [ "$miss" -eq 0 ]
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -51,7 +98,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: taste-design/out
+          path: _site
 
   deploy:
     needs: build

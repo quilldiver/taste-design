@@ -14,3 +14,6 @@ outputs/
 .workbuddy/
 # Next 的空脚手架目录
 taste-design/tmp/
+
+# CI 组装出的站点目录（仅构建期存在）
+_site/

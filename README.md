@@ -2,16 +2,32 @@
 
 设计师工作室品牌官网。视觉主线：WebGL 着色器背景 + 三屏滚动吸附 + 首屏持续自转的 3D 图片环（RING，40 张作品卡围成一圈、俯角可随光标视差）+ 第二屏的 3D 卡片长卷（七类出品，恒定 90° 的鳍片 + 离轴透视，可拖拽 / 点击 / 左右键）+ 末屏的**泡泡池**（14 个品牌的 logo 玻璃球从窗口顶部落下、压在文案之前、堆在屏底，每颗球带着自己的倾角与滚动，指针可推开 / 抓起甩出），以及一个三栏式的**作品索引页**（左 一级+二级 / 中 三级 / 右 可长滚的图片流）。
 
-> ⚠️ **仓库里的两份网页一直是同步维护的，任何改动都要同时改两边**，详见下方「双交付」。
+> ⚠️ **发布源以单文件版为准**：线上站点直接发布 `taste-design.html`，**不再发布 Next 构建产物**。
+> 原因是两份已经分叉了——Next 版还停在「3D 品牌球」阶段，没有泡泡池、没有卡片长卷的进出场状态机；
+> 单文件版才是最终完成的那份。详见下方「双交付」。
 > Next 的构建命令请在**你自己的终端**里跑——AI 助手的内置沙箱会拦截它写 `.next/` 目录。
 
 ## 在线地址
 
-推送到 `main` 后，GitHub Actions 会自动构建 Next 版本并发布：
+推送到 `main` 后，GitHub Actions 组装单文件版并发布：
 
 <https://quilldiver.github.io/taste-design/>
 
 对应工作流：`.github/workflows/deploy-pages.yml`（也可在 Actions 面板手动触发）。
+
+站点根内容：
+
+```
+index.html      ← taste-design.html 原样改名，逐字节一致
+favicon.ico
+ring/           首屏 3D 图片环（40）
+works/          作品图（107）
+card-3d/        第二屏卡片（7）
+partners/       泡泡池的品牌球（14）
+v1/             1.0（木马版）存档
+```
+
+发布前工作流会做硬校验：素材目录缺失、或 HTML 里写死的相对路径取不到文件，直接失败，不会发出半成品。
 
 ## 一、仓库里有什么
 
@@ -34,7 +50,7 @@ taste-design/              Next.js 交付版（源码）
     ├── fonts/             钉钉进步体子集 woff2（由 tools/build-fonts.py 生成）
     └── lib/               site.ts（文案与 BASE）+ works.ts（作品目录数据）
 └── public/{logo,ring,card-3d,works}/   Next 版读取的素材（与根目录同步）
-.github/workflows/         自动构建 + 发布到 GitHub Pages
+.github/workflows/         组装单文件版 + 发布到 GitHub Pages
 ```
 
 `.gitignore` 排除了 `node_modules/`、`.next/`、`out/`、`outputs/`（本地验证截图）与 `.workbuddy/`（本地工作记忆）。
@@ -736,14 +752,14 @@ npm run typecheck  # tsc --noEmit
 
 ## 十、部署相关的几个约定
 
-- **静态导出**：`next.config.ts` 里 `output: "export"` + `trailingSlash: true`，站点没有任何服务端依赖。
-  `/works/[slug]` 用 `generateStaticParams()` 在构建期列出 7 个分类。
-- **子路径前缀**：Pages 项目站点地址带 `/taste-design`，所以 CI 注入 `NEXT_PUBLIC_BASE_PATH=/taste-design`，
-  `next.config.ts` 用它设 `basePath`/`assetPrefix`，源码里手写的绝对路径再拼 `BASE`（`src/lib/site.ts`）。
-  **如果改仓库名，必须同步改 `deploy-pages.yml` 里的 `NEXT_PUBLIC_BASE_PATH`**，否则图片与字体 404。
-- **字体走 webpack 而不是 public/**：`public/` 里的资源在 CSS 中只能写根绝对路径，Next 不会给它补 `basePath`，
-  子路径部署会 404。放进 `src/fonts/` 后会被输出到 `/_next/static/media/` 下，前缀自动生效。
-- `public/.nojekyll`：防止 `_next` 这类下划线目录被 Jekyll 跳过。
+- **发布源**：站点根 = `taste-design.html` + `ring/ works/ card-3d/ partners/` + `/v1/`。
+  单文件版的资源引用全是相对路径，挂在 `/taste-design/` 子路径下**不需要任何前缀改写**，
+  所以工作流里没有 `basePath` 注入这一步。
+- **改仓库名**：只需保证仓库名与 Pages 地址一致；单文件版内部没有写死任何绝对路径，无需改代码。
+- **发布前校验**：工作流会核对素材目录是否存在、HTML 里写死的相对路径是否都能取到文件，
+  任一不满足即失败，避免发出缺图的半成品。
+- **Next 源码不再参与发布**：`taste-design/` 保留作后续重构基础。若要让 Next 重新上线，
+  先按「双交付」把分叉补齐（泡泡池、卡片长卷状态机），再改回 `npm run build` + `out/` 发布。
 
 ## 十一、素材
 
