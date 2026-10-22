@@ -12,8 +12,8 @@ export const STUDIO = {
   since: "2016",
   city: "中国 · 深圳",
   email: "hello@tastedesign.studio",
-  phone: "+86 755 0000 0000",
-  wechat: "tastedesign",
+  phone: "13076956913",
+  wechat: "hujiao20200730",
 } as const;
 
 /**
@@ -48,7 +48,7 @@ export const NAV = [
 
 export const CONTACTS = [
   { label: "邮件", value: "hello@tastedesign.studio", href: "mailto:hello@tastedesign.studio" },
-  { label: "微信", value: "tastedesign", href: null },
-  { label: "电话", value: "+86 755 0000 0000", href: "tel:+8675500000000" },
+  { label: "微信", value: "hujiao20200730", href: null },
+  { label: "电话", value: "13076956913", href: "tel:13076956913" },
   { label: "地址", value: "深圳市南山区 · 蛇口", href: null },
 ] as const;
