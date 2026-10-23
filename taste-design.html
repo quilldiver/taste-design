@@ -961,7 +961,9 @@ main{position:relative;z-index:1;overflow-x:clip}
    现在下半屏要让给池子，规则线与页脚各减一档，1320 以下也不会把池子挤没 */
 .contact .rule{margin:2.5rem 0}
 .contact .meta{margin-top:0;max-width:none}
-@media (min-width:1024px){.contact .meta{grid-template-columns:repeat(4,1fr)}}
+/* 2026-10-23：地址那一项已删除，列数随之 4 → 3，否则末列空一格、
+   剩下三项的间距会被 1fr 均分拉歪（每列仍各占 1/3 版心宽） */
+@media (min-width:1024px){.contact .meta{grid-template-columns:repeat(3,1fr)}}
 .contact a{color:var(--ink);text-decoration:none;transition:color .2s ease}
 .contact a:hover{color:var(--ember);text-decoration:underline;text-underline-offset:4px}
 /* 第 3 屏 meta 里的**正文**（dd）：鼠标悬浮放大 1.5 倍。
@@ -1012,7 +1014,7 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
   .contact .lede{margin-top:1rem}
   .mailto{margin-top:1.75rem}
   .contact .rule{margin:1rem 0}
-  /* meta 在 390 下是单列 4 行、整块 265px —— 行距收一档能省 24px */
+  /* meta 在 390 下是单列（地址删掉后 3 行，原 4 行约 265px）—— 行距收一档能省 24px */
   .contact .meta{gap:.72rem 1.5rem}
   .contact .meta dd{margin-top:.3rem}
   /* 页脚贴到 0：版权行本来就跟 meta 是两组灰字，贴在一起不难看。
@@ -1039,7 +1041,9 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
 
 /* 矮屏（iPhone SE 这类 667 高的）：单列 meta 光自己就 240px，文案整块
    505px + 球堆 194px 塞不进 100svh —— meta 会被球压住一半。这里让 meta
-   转两列、留白再收一档，全部落到球堆顶边之上。 */
+   转两列、留白再收一档，全部落到球堆顶边之上。
+   两列里放 3 项 ⇒ 排成 2 + 1，右下角空一格；不改成 3 列是因为 375 宽下
+   每列只剩 ~110px，「hujiao20200730」会顶到列边（实测 105px）。 */
 @media (max-width:760px) and (max-height:720px){
   .contact{padding-top:4.25rem}
   .contact h2{margin-top:.75rem;font-size:clamp(1.75rem,8.4vw,2.2rem)}
@@ -1480,11 +1484,9 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
           <div><dt>邮件</dt><dd><a href="mailto:hello@tastedesign.studio">hello@tastedesign.studio</a></dd></div>
           <div><dt>微信</dt><dd>hujiao20200730</dd></div>
           <div><dt>电话</dt><dd><a href="tel:13076956913">13076956913</a></dd></div>
-          <div><dt>地址</dt><dd>深圳市南山区 · 蛇口</dd></div>
         </dl>
         <footer>
           <p>© 2026 Taste Design 设计厨房</p>
-          <p>中国 · 深圳</p>
         </footer>
       </div>
       <!-- 泡泡池：球由脚本画在 canvas 上（logo 用 <img> 预载，见第 5 块）。
@@ -2665,7 +2667,7 @@ if(window.__bootNav) window.__bootNav();
       /* 横向 = 槽位 + 三角分布的小抖动：下层（slot.r=0）贴地、抖 0.30 格没关系，
          球不再一格一格对齐、也有自然错位；上层球**不抖**（精确落进下层两颗球
          之间的凹处）。中间倾倒（v31）后两端球都最后落，上层球一旦抖出凹处就被
-         「墙 + 下层球」楔住、骑上堆顶，压到两侧的 © 与「中国 · 深圳」文案
+         「墙 + 下层球」楔住、骑上堆顶，压到左下角的 © 文案
          （实测 x=110/1300 处压 10~47px、约一半概率）。上层锁死 + 球径自带
          0.94~1.0 的 6% 差异，落点仍有自然错位，不会变回「一格一格对齐」。 */
       bd={
