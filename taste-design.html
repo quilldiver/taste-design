@@ -1080,7 +1080,7 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
      ⚠ 一级栏不要改回 vw 弹性值 —— 它是「英文大字 + 中文小字」同一行、
      两端 white-space:nowrap，列一宽字号也涨，最容易撑破。 */
   --wd-c1:220px;
-  --wd-c3:clamp(176px,15.6vw,252px);
+  --wd-c3:clamp(276px,calc(15.6vw + 100px),352px);   /* 2026-10-23 各档 +100px：长标题不再折行 */
   /* 一级栏**内容右缘** → 三级栏**内容左缘**的净距（参考图里左两栏是相邻的） */
   --wd-gap:80px;
 }
