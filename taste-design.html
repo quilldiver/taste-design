@@ -737,7 +737,14 @@ main{position:relative;z-index:1;overflow-x:clip}
    （见 .wd-feed-in 的 padding-left），滚动时前面的作品才会滑到渐变下面去。 */
 .cards-works{position:relative;flex:1 1 0;min-height:0;width:100%;
   max-width:none;margin-inline:0;padding-inline:0;
-  --ws-menu-w:clamp(150px,14vw,220px);
+  /* 文字区宽度 = **最长标题实测宽度**，写死成定值而不是 vw 弹性值。
+     为什么不用 vw：字号是固定的（16px / 选中 20px），列宽却随视口涨落，
+     窄视口里必然折行 —— 21 条作品标题里最长的是
+     「市南区 “文明养犬” 主题实践活动」，20px 下实测 308.8px，
+     加上选中项白点让出的 padding-left:12px = 320.8px，
+     取 330px 留 9px 余量。字号不变 ⇒ 列宽也不该变，定值才能保证永不折行。
+     ⚠ 改这里的上限/下限都会重新引入折行；若以后标题更长，先量再改。 */
+  --ws-menu-w:330px;
   --ws-fade:clamp(1.5rem,4vw,3rem);
   --ws-inset:calc(var(--pad) + var(--ws-menu-w) + var(--ws-fade));
   /* 悬浮导航的黑色渐变宽度。用户要的是**纯线性** #000000 100% → 0%，
@@ -1080,7 +1087,12 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
      ⚠ 一级栏不要改回 vw 弹性值 —— 它是「英文大字 + 中文小字」同一行、
      两端 white-space:nowrap，列一宽字号也涨，最容易撑破。 */
   --wd-c1:220px;
-  --wd-c3:clamp(396px,calc(15.6vw + 220px),472px);   /* 2026-10-23 累计各档 +220px（先 +100，再 +120）：所有三级条目统一加宽 */
+  /* ⚠ 这个三级列宽**只服务 #page-detail 里的静态布局**，而 #page-detail 是常驻
+     hidden 的数据宿主（三栏会被 JS 移进第 2 屏的 .cards-works）——
+     屏幕上真正看得见的三级列宽是 .cards-works 的 --ws-menu-w（见上面那段）。
+     两者互不相干：改这个不会让作品集里的菜单变宽，改那个也不会。
+     这里保留 2026-10-23 之前的取值，避免留下一个「以为在生效」的死变量。 */
+  --wd-c3:clamp(176px,15.6vw,252px);
   /* 一级栏**内容右缘** → 三级栏**内容左缘**的净距（参考图里左两栏是相邻的） */
   --wd-gap:80px;
 }
@@ -1191,11 +1203,9 @@ footer p{margin:0;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.2em;
    选中项的左缘就会和别的标题错开，整列立刻看着不齐。
    ⚠ margin-left 要扣掉一级栏那份余量，否则三级栏会被整体推右
    （一级栏的盒子宽了 55px，但它多出来的只是 padding）。
-   ⚠ 余量是固定比例而不是固定像素：即便内容盒窄到下限（396px），
-     一个字 16px 的长标题也不会折行（实测最长一条 225px），25% 的余量照样够。
-   ⚠ 列宽的下限 396px 已经吃掉了 1024–1199 这一段的大部分余量的富余：
-     1024 视口下图片流只剩 165px（改动前 315px）。这一段是 iPad 横屏 / 小窗口，
-     若哪天要照顾它，把下限调回 276px 或把窄屏堆叠断点从 1024 提到 1200。
+   ⚠ 余量是固定比例而不是固定像素：窄一点的视口里内容盒只有 176px，
+     但字号仍是 16px、长标题会**折行**（桌面态没有 nowrap），折行后最长一行
+     ≤ 内容盒，所以 25% 的余量照样够。
    ⚠ 省下来的宽度会自动落到 .wd-feed（三栏里只有它 flex:1 1 auto）；
    不要再往 .wd-list 上加 width，那会把图片列的宽度吃掉。 */
 .wd-list{flex:none;width:calc(var(--wd-c3) * 1.25);padding-right:calc(var(--wd-c3) * .25);
