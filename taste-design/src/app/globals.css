@@ -419,11 +419,6 @@
 .hero-meta a {
   color: inherit;
   text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.hero-meta a:hover {
-  color: var(--color-ember);
 }
 
 /* ⚠ 这条必须排在 .hero-meta 基础规则之后：同权重后写者胜，
