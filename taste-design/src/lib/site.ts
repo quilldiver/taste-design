@@ -11,7 +11,7 @@ export const STUDIO = {
     "我们是一间设计厨房。不卖灵感，只卖配方——把策略、排版与执行按火候配比，出品稳定、可复现、有回味的设计。",
   since: "2016",
   city: "中国 · 深圳",
-  email: "hello@tastedesign.studio",
+  email: "402783748@qq.com",
   phone: "13076956913",
   wechat: "hujiao20200730",
 } as const;
@@ -47,7 +47,7 @@ export const NAV = [
 ] as const;
 
 export const CONTACTS = [
-  { label: "邮件", value: "hello@tastedesign.studio", href: "mailto:hello@tastedesign.studio" },
+  { label: "邮件", value: "402783748@qq.com", href: "mailto:402783748@qq.com" },
   { label: "微信", value: "hujiao20200730", href: null },
   { label: "电话", value: "13076956913", href: "tel:13076956913" },
   { label: "地址", value: "深圳市南山区 · 蛇口", href: null },

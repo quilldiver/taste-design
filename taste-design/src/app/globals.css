@@ -267,6 +267,12 @@
   max-width: 34rem;
 }
 
+/* 联系方式位于 3D 环的透明交互层上方，保证文字可悬浮。 */
+.hero-side {
+  position: relative;
+  z-index: 2;
+}
+
 .hero-intro {
   max-width: 36rem;
   font-size: 1.0625rem;
@@ -361,7 +367,7 @@
 
    旧版是「左标签 + 右值」的一行（grid-template-columns:4.6em 1fr），
    中文标签加长邮箱会把值挤得很窄；改成上下两行后值拿到整栏宽度，
-   hover ×1.5 放大也不会撞边。标签 12px，与第 3 屏 dt 同一个值。
+   正文 18–20px、标签 14px；悬浮放大 1.25 倍，给长邮箱保留余量。
 
    hover 放大：dd 是块级元素、默认占满整行，补 width:fit-content 把盒子
    收到文字宽，悬浮热区才等于文字本身；transform-origin:left center 让
@@ -382,25 +388,32 @@
   gap: 0.28rem;
 }
 
-.hero-meta dt {
+.hero-meta dt,
+#contact dt {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 14px;
   letter-spacing: 0.2em;
   color: var(--color-mute);
+}
+
+/* 第一屏与联系屏共用字号、行高，包括联系屏的邮件入口。 */
+.hero-meta dd,
+#contact dd,
+#contact a[href^="mailto:"] {
+  font-size: clamp(1.125rem, 1.4vw, 1.25rem);
+  line-height: 1.5;
 }
 
 .hero-meta dd {
   margin: 0;
   width: fit-content;
-  font-size: 0.95rem;
-  line-height: 1.5;
   color: var(--color-ink);
   transform-origin: left center;
   transition: transform var(--wd-pop);
 }
 
 .hero-meta dd:hover {
-  transform: scale(1.5);
+  transform: scale(1.25);
 }
 
 .hero-meta a {
@@ -925,6 +938,42 @@
   opacity: 1;
 }
 
+/* 选中项放大时，两侧的导航项同步向外让位。 */
+.site-nav nav[aria-label="主导航"] ul {
+  --nav-push: .75rem;
+}
+
+.site-nav nav[aria-label="主导航"] li {
+  transition: transform var(--wd-pop);
+}
+
+.site-nav nav[aria-label="主导航"] li:has(~ li a[aria-current="page"]) {
+  transform: translateX(calc(-1 * var(--nav-push)));
+}
+
+.site-nav nav[aria-label="主导航"] li:has(a[aria-current="page"]) ~ li {
+  transform: translateX(var(--nav-push));
+}
+
+@media (max-width: 479.98px) {
+  .site-nav nav[aria-label="主导航"] ul {
+    --nav-push: .5rem;
+  }
+}
+
+/* 顶部导航选中后，中英文文字同步放大并保持右对齐。 */
+.site-nav nav[aria-label="主导航"] a > span {
+  align-items: flex-end;
+  text-align: right;
+  transform: scale(1);
+  transform-origin: right center;
+  transition: transform var(--wd-pop);
+}
+
+.site-nav nav[aria-label="主导航"] a[aria-current="page"] > span {
+  transform: scale(1.25);
+}
+
 /* ─────────────────────────────────────────────
    品牌文字浮现：首屏只留图形 logo，进入第二屏后
    文字从遮罩下方往上浮现（第二行略延迟）
@@ -946,31 +995,13 @@
   opacity: 1;
 }
 
-/* ─────────────────────────────────────────────
-   第 2 屏：3D 卡片长卷（对位 Framer「sleeve」实站效果）
-
-   ★ 几何模型（照参考站逆向出来的，别改回「各转各的角度」）：
-     所有卡片**恒定 rotateY(90°)**——像一排立着的鳍片/书立，沿 x 轴等距排开、
-     z 全为 0。两侧卡片「看起来朝观察者转」不是卡片转了，是**离轴透视**：
-     视线与鳍片的夹角随离屏心距离增大，露出的画面越来越多
-     （正中只剩 ~15px 书脊，边缘露出 ~70% 画面）。
-     透视原点压在**卡片顶边**上，于是顶边水平、底边向后斜——海报墙向后倒。
-     （第一版按「各转各的角度」做，透视纵深全被人为压平——就是那次返工。）
-
-   ⚠ 卡片是**双面**的（front / back 各一张图）：转过 90° 后屏心右侧的卡
-     露出的是背面，不给背面就只剩一块底板。
-
-   尺寸单一真源：--cw ⇒ 卡高 / 间距 / 圆角 / 字号 / 透视全部派生。
-     --gap-k 卡片中心间距 ÷ 卡宽（参考站 160/380 = 0.42）。这里取 0.68：
-             一要给卡顶 24px 卡名留横向空间（名字 ~96px ≤ 0.68×最小卡宽 165 ≈ 112px），
-             二要压住远端鳍片的投影重叠宽度。残余的重叠由 render 里每帧写入的
-             zIndex 精确排序兜底（离屏心越近越在前），不再依赖「投影不重叠」。
-     透视    4 × 卡宽（参考站 1500/380 ≈ 3.95）
-   ───────────────────────────────────────────── */
+/* 第二屏卡片长卷：侧立队列、朝镜头翻转、投影让位与指针高光。
+   桌面间距比 .58（比参考页加宽约 38%）、透视比 1500/380、原版板厚 8px。
+   原作品 2:3 比例保留，窄屏改为正面横滑。 */
 .cards-screen {
-  --cw: min(27svh, max(165px, 13.6vw));
+  --cw: min(34svh, clamp(200px, 26vw, 380px));
   --ch: calc(var(--cw) * 1.5);
-  --gap-k: 0.68;
+  --gap-k: 0.58;
   --gap: calc(var(--cw) * var(--gap-k));
   height: 100svh;
   min-height: 0;
@@ -1052,7 +1083,8 @@
   position: absolute;
   inset: 0;
   z-index: 1;
-  perspective: calc(var(--cw) * 4);
+  perspective: calc(var(--cw) * 3.947368421);
+  transform-style: preserve-3d;
   perspective-origin: 50% calc(50% - var(--ch) / 2);
   touch-action: pan-y; /* 竖滑交给翻屏，横滑才是拖带子 */
   cursor: grab;
@@ -1083,30 +1115,14 @@
   pointer-events: none;
 }
 
-/* 卡：定位在舞台中心，transform 全部由 JS 每帧写（translate3d + rotateY）
-
-   ★ 卡是**实体盒**，不是两张纸。照参考站逆出来的结构重建：
-       正面 #161616 + 背面 #5c5c5c（各推 ±厚/2）
-       + 4 条直边 + 每个角 4 段「弦」（90° 切 4 段，2r·sin11.25°）
-     厚度 8.39/380 = 2.2% 卡宽，圆角 15/380 = 3.9% 卡宽。
-
-   ⚠ 圆角必须用「弦」去近似，不能只给 border-radius：近端截面在上、下角要
-     顺着圆弧弯进卡面，才读得出「一块板」；只做成方头直线的话，侧对时就是
-     一条描边，卡看起来仍是两张纸。
-   ⚠ backface-visibility:hidden 是必须的：卡恒为 rotateY(90°)，只有近端那面墙
-     的法线朝向观察者，远端那面被板身挡住。不剔除就会两头各出一条灰边。
-*/
+/* 原版实体侧边：8px 厚度、14px 圆角，正反面与侧壁共用轮廓。 */
 .card3d {
   position: absolute;
   left: 50%;
   top: 50%;
-  /* 板厚：参考站 8.39/380 = 2.2%，这里提到 2.6% —— 我们的卡在屏上只有
-     ~110px 宽，2.2% 时截面只剩 6px，读不出厚度 */
-  --ct: calc(var(--cw) * 0.026);
-  --cr: calc(var(--cw) * 0.039); /* 圆角半径 */
-  /* 圆弧每段弦长：比理论弦长 0.390r 放大 14%，让相邻两段互相压住 ——
-     等长共边会因抗锯齿在接缝处漏出背景，看上去像一圈圈台阶 */
-  --cl: calc(var(--cr) * 0.445);
+  /* 参考页原版板厚 8px。 */
+  --ct: 8px;
+  --cr: 14px; /* 圆角半径 */
   width: var(--cw);
   height: var(--ch);
   margin-left: calc(var(--cw) / -2);
@@ -1124,12 +1140,11 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
-  border-radius: var(--cr);
+  border-radius: 0;
+  clip-path: var(--card-outline, inset(0 round var(--cr)));
   background: #131a24;
   backface-visibility: hidden;
-  /* 内侧一道极窄的暗边：卡面与截面交界处的缝，参考站也有 */
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35),
-    0 calc(var(--cw) * 0.016) calc(var(--cw) * 0.05) rgba(0, 0, 0, 0.5);
+  border: 0;
 }
 
 .card3d-face.front {
@@ -1140,139 +1155,13 @@
   transform: rotateY(180deg) translateZ(calc(var(--ct) / 2));
 }
 
-/* ── 侧壁 ──
-   基础色取参考站实测的 #5c5c5c，再叠一道「沿厚度方向」的柔和明暗：
-   暗 22% → 透明 27% → 亮 14% 75% → 暗 16%，于是截面中间偏外有一道高光。
-   参考站截面实测亮度剖面（由内到外）：75→88→104→91→76，用的就是它那组色标；
-   之前用 #b3bbc9 峰值 181 太亮，看起来是一条白描边而不是板厚。 */
+/* 原版侧壁材质：深灰底 + 沿厚度方向的暗部、高光渐变。 */
 .card3d-wall {
   position: absolute;
+  left: 50%;
+  top: 50%;
   backface-visibility: hidden;
-  background-color: #5c5c5c;
-  background-repeat: no-repeat;
-}
-
-.card3d-wall.v,
-.card3d-wall.a {
-  width: var(--ct);
-  background-image: linear-gradient(
-    90deg,
-    rgba(0, 0, 0, 0.22) 0%,
-    rgba(0, 0, 0, 0) 27%,
-    rgba(255, 255, 255, 0.14) 75%,
-    rgba(0, 0, 0, 0.16) 100%
-  );
-}
-
-.card3d-wall.h {
-  height: var(--ct);
-  background-image: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0.22) 0%,
-    rgba(0, 0, 0, 0) 27%,
-    rgba(255, 255, 255, 0.14) 75%,
-    rgba(0, 0, 0, 0.16) 100%
-  );
-}
-
-/* 直边长度要减掉两个圆角，剩下的圆弧由 .a 段接住 */
-.card3d-wall.v {
-  height: calc(100% - var(--cr) * 2);
-}
-
-.card3d-wall.h {
-  width: calc(100% - var(--cr) * 2);
-}
-
-.card3d-wall.a {
-  height: var(--cl);
-}
-
-.card3d-wall.v,
-.card3d-wall.a {
-  transform: translate(-50%, -50%) rotateZ(var(--a, 0deg)) rotateY(90deg);
-}
-
-.card3d-wall.h {
-  transform: translate(-50%, -50%) rotateZ(var(--a, 0deg)) rotateX(90deg);
-}
-
-/* 四条直边：left/top 给的是「这条边所在的位置」，再靠 translate(-50%,-50%)
-   把元素中心压上去 —— 于是墙的平面正好落在卡片的边界上 */
-.card3d-wall.wl {
-  --a: 180deg;
-  left: 0;
-  top: 50%;
-}
-
-.card3d-wall.wr {
-  --a: 0deg;
-  left: 100%;
-  top: 50%;
-}
-
-.card3d-wall.wt {
-  --a: 0deg;
-  left: 50%;
-  top: 0;
-}
-
-.card3d-wall.wb {
-  --a: 180deg;
-  left: 50%;
-  top: 100%;
-}
-
-/* 四角圆弧：每角 4 段，θm = 11.25° / 33.75° / 56.25° / 78.75°
-   （--c = cosθm、--s = sinθm、--d = θm，纯常量，写死在 CSS 里不占 JS） */
-.card3d-wall.c1 {
-  --c: 0.98079;
-  --s: 0.19509;
-  --d: 11.25deg;
-}
-
-.card3d-wall.c2 {
-  --c: 0.83147;
-  --s: 0.55557;
-  --d: 33.75deg;
-}
-
-.card3d-wall.c3 {
-  --c: 0.55557;
-  --s: 0.83147;
-  --d: 56.25deg;
-}
-
-.card3d-wall.c4 {
-  --c: 0.19509;
-  --s: 0.98079;
-  --d: 78.75deg;
-}
-
-/* 法线 n=(cosθ, ±sinθ)，rotateZ(φ) 把 +x 转到 φ 方向：
-   右上 φ=-θ、左上 φ=180+θ、右下 φ=θ、左下 φ=180-θ */
-.card3d-wall.tr {
-  --a: calc(0deg - var(--d));
-  left: calc(100% - var(--cr) + var(--cr) * var(--c));
-  top: calc(50% - var(--ch) / 2 + var(--cr) - var(--cr) * var(--s));
-}
-
-.card3d-wall.tl {
-  --a: calc(180deg + var(--d));
-  left: calc(var(--cr) - var(--cr) * var(--c));
-  top: calc(50% - var(--ch) / 2 + var(--cr) - var(--cr) * var(--s));
-}
-
-.card3d-wall.br {
-  --a: var(--d);
-  left: calc(100% - var(--cr) + var(--cr) * var(--c));
-  top: calc(50% + var(--ch) / 2 - var(--cr) + var(--cr) * var(--s));
-}
-
-.card3d-wall.bl {
-  --a: calc(180deg - var(--d));
-  left: calc(var(--cr) - var(--cr) * var(--c));
-  top: calc(50% + var(--ch) / 2 - var(--cr) + var(--cr) * var(--s));
+  background: linear-gradient(180deg, rgba(0, 0, 0, .22), transparent 27%, rgba(255, 255, 255, .14) 75%, rgba(0, 0, 0, .16)), #5c5c5c;
 }
 
 .card3d-face img {
@@ -1657,7 +1546,7 @@
   transition: transform var(--wd-pop);
 }
 #contact dd:hover {
-  transform: scale(1.5);
+  transform: scale(1.25);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -2325,3 +2214,15 @@
   }
 }
 
+
+
+/* 3D 卡片：参考页的侧立队列、镜头朝向悬停、白色实体侧边。
+   保留原作品 2:3 比例；手机使用正面横滑。 */
+.card3d-face::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at var(--card-glow-x,50%) var(--card-glow-y,50%),rgba(255,255,255,.62),transparent 74%);
+  opacity:var(--card-glow,0)}
+.cards-stage::before{background:none}
+.cards-screen:not(.is-works) .cards-cap{font-size:clamp(20px,1.8vw,28px)}
+@media(max-width:767.98px),(hover:none) and (pointer:coarse){
+  .cards-screen:not(.is-works){--cw:min(30svh,58vw);--gap-k:1.3}
+}

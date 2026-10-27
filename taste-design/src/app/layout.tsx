@@ -25,7 +25,7 @@ export default function RootLayout({
         {/* 标签页图标：public/favicon.ico → 导出后落在站点根（out/favicon.ico）。
             ⚠ 手写绝对路径不会被 next.config 的 basePath 自动改写，须自己拼 BASE
               （同 src/lib/site.ts 里那条约定）。 */}
-        <link rel="icon" href={`${BASE}/favicon.ico`} sizes="any" />
+        <link rel="icon" href={`${BASE}/favicon.ico?v=2970f583b117`} sizes="16x16 24x24 32x32 48x48 64x64 128x128 256x256" type="image/x-icon" />
       </head>
       <body className="relative overflow-x-hidden antialiased">
         {/* 背景两层：CSS 兜底 → WebGL shader；压暗罩（shader-scrim）已按用户要求移除 */}
