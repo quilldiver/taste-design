@@ -1535,6 +1535,11 @@
    transition 沿用作品页选中项那套 --wd-pop（0.4s 同一条贝塞尔曲线），全站同一手感。
    缩放不参与布局 ⇒ 不会把后面的列推开；只在最窄档位会短暂压到邻列文字。
    ═══════════════════════════════════════════════════════════════════ */
+.contact-emphasis {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 20px;
+}
+
 #contact dd {
   width: fit-content;
   transform-origin: left center;

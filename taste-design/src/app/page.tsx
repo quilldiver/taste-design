@@ -112,23 +112,9 @@ function ContactScreen() {
           把你的想法端上来
         </h2>
 
-        {/* 这一段要求单行：去掉 34rem 宽度限制并禁止折行；窄屏放不下时再自动折行 */}
-        <p className="mt-6 text-[1.0625rem] leading-[1.75] text-mute whitespace-nowrap max-[760px]:whitespace-normal">
-          每次合作都从一次对话开始。说说你想做什么，我们一起看看该怎么配比。
+        <p className="mt-6 max-w-[64rem] text-[1.0625rem] leading-[1.85] text-mute">
+          每次合作都从一次对话开始。把你的想法、难题和期待端上来，我们先理清品牌该说什么，再把策略、视觉与执行按火候配好。从一个标志、一套包装到完整的品牌系统，我们把零散需求收进同一套配方，让每个触点保持一致，让后续应用有章可循。<br /><span className="contact-emphasis">方向想透</span>，<span className="contact-emphasis">细节做实</span>，让每一份出品都能{" "}<span className="contact-emphasis">稳稳落定</span>，也留得下回味。
         </p>
-
-        <a
-          href={`mailto:${STUDIO.email}`}
-          className="group mt-10 inline-flex min-h-[44px] items-center gap-3 border-b border-ember/40 pb-1 text-[clamp(1.1rem,2.2vw,1.6rem)] text-ink transition-colors duration-200 hover:border-ember"
-        >
-          <span className="font-mono tracking-tight">{STUDIO.email}</span>
-          <span
-            aria-hidden="true"
-            className="text-ember transition-transform duration-200 group-hover:translate-x-1"
-          >
-            →
-          </span>
-        </a>
 
         <div className="hairline my-14" />
 
@@ -142,7 +128,7 @@ function ContactScreen() {
                 {c.href ? (
                   <a
                     href={c.href}
-                    className="underline-offset-4 transition-colors duration-200 hover:text-ember hover:underline"
+                    className="underline-offset-4 hover:underline"
                   >
                     {c.value}
                   </a>
