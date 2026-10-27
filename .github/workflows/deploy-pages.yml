@@ -40,13 +40,14 @@ jobs:
           cp taste-design.html _site/index.html
           cp favicon.ico _site/favicon.ico
 
-          # 只复制运行时真正会用到的四个目录：
+          # 只复制运行时真正会用到的五个目录：
           #   ring/      首屏 3D 图片环（40）
           #   works/     作品图（107）
           #   card-3d/   第二屏卡片（7）
           #   partners/  泡泡池的品牌球（14）
+          #   wechat/    二维码原图与交互样式、脚本
           # logo/ card/ carousel/ 是更早迭代的素材，单文件版不引用，不发布。
-          for d in ring works card-3d partners; do
+          for d in ring works card-3d partners wechat; do
             test -d "$d" || { echo "::error::缺少素材目录 $d"; exit 1; }
             cp -R "$d" "_site/$d"
           done
@@ -69,9 +70,13 @@ jobs:
 
           test -f index.html
           test -f favicon.ico
-          for d in ring works card-3d partners; do
+          for d in ring works card-3d partners wechat; do
             test -d "$d" || { echo "::error::缺少目录 $d"; exit 1; }
           done
+
+          test -s wechat/qr.png
+          test -s wechat/wechat.js
+          test -s wechat/wechat.css
 
           # 抽出 HTML 里写死的相对路径引用，逐个确认文件存在。
           # 排除 JS 里的字符串拼接片段（形如 src="card-3d/'+it.f+'.webp"），

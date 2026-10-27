@@ -1,4 +1,5 @@
 import Ring3D from "@/components/Ring3D";
+import WeChatTrigger from "@/components/WeChatTrigger";
 import CardCarousel from "@/components/CardCarousel";
 import FullPageSnap from "@/components/FullPageSnap";
 import GlobeGallery from "@/components/GlobeGallery";
@@ -37,7 +38,7 @@ function HeroScreen() {
             ].map((row) => (
               <div key={row.k}>
                 <dt>{row.k}</dt>
-                <dd>{row.href ? <a href={row.href}>{row.v}</a> : row.v}</dd>
+                <dd>{row.href ? <a href={row.href}>{row.v}</a> : row.k === "微信" ? <WeChatTrigger account={row.v} /> : row.v}</dd>
               </div>
             ))}
           </dl>
@@ -145,6 +146,8 @@ function ContactScreen() {
                   >
                     {c.value}
                   </a>
+                ) : c.label === "微信" ? (
+                  <WeChatTrigger account={c.value} />
                 ) : (
                   c.value
                 )}

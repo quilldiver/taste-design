@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "./globals.css";
 import ShaderBackground from "@/components/ShaderBackground";
 import SiteNav from "@/components/SiteNav";
@@ -22,6 +23,7 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <head>
+        <link rel="stylesheet" href={`${BASE}/wechat/wechat.css?v=1`} />
         {/* 标签页图标：public/favicon.ico → 导出后落在站点根（out/favicon.ico）。
             ⚠ 手写绝对路径不会被 next.config 的 basePath 自动改写，须自己拼 BASE
               （同 src/lib/site.ts 里那条约定）。 */}
@@ -39,6 +41,7 @@ export default function RootLayout({
           <SiteNav />
           <main data-page-stage className="relative overflow-x-clip">{children}</main>
         </PageSwipe>
+        <Script src={`${BASE}/wechat/wechat.js?v=1`} strategy="afterInteractive" />
       </body>
     </html>
   );
