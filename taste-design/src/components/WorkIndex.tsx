@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { BASE } from "@/lib/site";
+import { SwipeLink } from "@/components/PageSwipe";
 import { SECTIONS, WORKS, WORKS_BY_SEC } from "@/lib/works";
 import { cn } from "@/lib/utils";
 
@@ -336,7 +337,7 @@ export function WorkIndex({ slug }: { slug: string }) {
   );
 
   return (
-    <div className="wdetail">
+    <div className="wdetail has-scroll-hint">
       {/* 版心：与导航 / 第 3 屏同一套 max-width + padding，三栏全在它之内 */}
       <div className="wd-in">
         {/* ── 一级 + 二级 ── */}
@@ -463,6 +464,20 @@ export function WorkIndex({ slug }: { slug: string }) {
             </div>
           </div>
         </div>
+      </div>
+      <div className="cards-scroll-hint work-detail-scroll-hint">
+        <span>鼠标滚动查看作品</span>
+        <SwipeLink className="scroll-next" href="/#contact">
+          <span>或点击箭头到下一页</span>
+          <svg
+            width="18" height="18" viewBox="0 0 20 20"
+            fill="none" stroke="currentColor" strokeWidth="1.5"
+            strokeLinecap="round" strokeLinejoin="round"
+            aria-hidden="true" focusable="false"
+          >
+            <path d="M10 3v13M5 11l5 5 5-5" />
+          </svg>
+        </SwipeLink>
       </div>
       {/* ── 下带：挂在页面级（在 .wd-in 版心之外）──
           所以它横跨整个视口、压在三栏所有内容之上，而不是只糊图片那一列。

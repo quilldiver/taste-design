@@ -49,6 +49,17 @@ function HeroScreen() {
       <div className="hero-stage">
         <Ring3D />
       </div>
+      <a className="hero-scroll-hint" href="#works">
+        <span>向下滚动到作品页面</span>
+        <svg
+          width="18" height="18" viewBox="0 0 20 20"
+          fill="none" stroke="currentColor" strokeWidth="1.5"
+          strokeLinecap="round" strokeLinejoin="round"
+          aria-hidden="true" focusable="false"
+        >
+          <path d="M10 3v13M5 11l5 5 5-5" />
+        </svg>
+      </a>
     </section>
   );
 }
@@ -56,21 +67,32 @@ function HeroScreen() {
 /** ── 第 2 屏：七类出品的 3D 卡片长卷（无黑色蒙版，卡片由 WORK_DECKS 驱动）── */
 function CardsScreen() {
   return (
-    <section className="screen cards-screen">
+    <section id="works" className="screen cards-screen">
       <div className="cards-head mx-auto w-full max-w-[1680px] px-[clamp(1rem,4.5vw,2rem)]">
         <div>
           <p className="label">What We Do — 07 Capabilities</p>
           <h2 className="display cards-title">七种手艺，一套配方</h2>
         </div>
-        <p className="cards-hint">
-          拖拽浏览 · 点击置中<span>Drag / Click</span>
-        </p>
       </div>
 
       {/* 长卷：满幅（不套版心），两端自然延伸到屏幕外。
           CardCarousel 返回两个兄弟节点：.band（3D 卡片带）+ .cards-caps（2D 卡名层） */}
       <div className="cards-stage">
         <CardCarousel />
+      </div>
+      <div className="cards-scroll-hint">
+        <span>可滚动或拖拽，点击卡片查看详情</span>
+        <a className="scroll-next" href="#clients">
+          <span>或点击箭头到下一页</span>
+          <svg
+            width="18" height="18" viewBox="0 0 20 20"
+            fill="none" stroke="currentColor" strokeWidth="1.5"
+            strokeLinecap="round" strokeLinejoin="round"
+            aria-hidden="true" focusable="false"
+          >
+            <path d="M10 3v13M5 11l5 5 5-5" />
+          </svg>
+        </a>
       </div>
     </section>
   );
